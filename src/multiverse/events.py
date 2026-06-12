@@ -49,6 +49,8 @@ class EventBus:
         self._queue: queue.Queue[dict[str, Any] | None] = queue.Queue()
         self._closed = False
         self._clickhouse_failed = False
+        self._clickhouse_client: Any = None
+        self._clickhouse_consecutive_failures = 0
 
         self._worker = threading.Thread(target=self._deliver, daemon=True)
         self._worker.start()
@@ -109,17 +111,17 @@ class EventBus:
         ):
             self._queue.put(event_dict)
 
-    def close(self) -> None:
+    def close(self, timeout: float = 10.0) -> None:
         """Drain the background delivery queue and shut down the worker.
 
-        Idempotent — safe to call multiple times.  Waits at most ~2 s
-        for outstanding deliveries to complete.
+        Idempotent — safe to call multiple times.  Waits at most *timeout*
+        seconds for outstanding deliveries to complete.
         """
         if self._closed:
             return
         self._closed = True
         self._queue.put(None)  # sentinel
-        self._worker.join(timeout=2.0)
+        self._worker.join(timeout=timeout)
 
     # ------------------------------------------------------------------
     # Background worker
@@ -132,11 +134,36 @@ class EventBus:
             if item is None:  # sentinel — shut down
                 break
 
-            if self._ingest_url:
-                self._deliver_http(item)
+            # Drain everything else currently in the queue
+            batch = [item]
+            while True:
+                try:
+                    nxt = self._queue.get_nowait()
+                except queue.Empty:
+                    break
+                if nxt is None:  # sentinel mid-batch — deliver then exit
+                    self._deliver_batch(batch)
+                    return
+                batch.append(nxt)
 
-            if self._clickhouse_config and not self._clickhouse_failed:
-                self._deliver_clickhouse(item)
+            self._deliver_batch(batch)
+
+    # ------------------------------------------------------------------
+    # Batch delivery
+    # ------------------------------------------------------------------
+
+    def _deliver_batch(self, batch: list[dict[str, Any]]) -> None:
+        """Deliver a batch of events to remote sinks.
+
+        HTTP is sent one event per POST (unchanged behaviour).
+        ClickHouse inserts all rows in a single call.
+        """
+        if self._ingest_url:
+            for event_dict in batch:
+                self._deliver_http(event_dict)
+
+        if self._clickhouse_config and not self._clickhouse_failed:
+            self._deliver_clickhouse(batch)
 
     # ------------------------------------------------------------------
     # Remote delivery helpers
@@ -156,11 +183,13 @@ class EventBus:
         except Exception:
             pass  # fire-and-forget — never let the engine crash
 
-    def _deliver_clickhouse(self, event_dict: dict[str, Any]) -> None:
-        """Try to insert *event_dict* into ClickHouse.
+    def _deliver_clickhouse(self, batch: list[dict[str, Any]]) -> None:
+        """Try to insert *batch* of events into ClickHouse.
 
-        On the first failure the *clickhouse* sink is permanently
-        disabled for the lifetime of this bus instance.
+        A single client is lazily created on first insert and reused for
+        the bus lifetime.  On insert failure the client is discarded,
+        recreated once, and the batch retried once.  After 3 consecutive
+        failed batches the sink is permanently disabled.
         """
         try:
             import clickhouse_connect
@@ -168,17 +197,21 @@ class EventBus:
             self._clickhouse_failed = True
             return
 
-        try:
-            cfg = self._clickhouse_config
-            client = clickhouse_connect.get_client(
-                host=cfg.get("host", "localhost"),
-                port=cfg.get("port", 8123),
-                username=cfg.get("username", "default"),
-                password=cfg.get("password", ""),
-                database=cfg.get("database", "default"),
-            )
-            table = cfg.get("table", "events")
+        cfg = self._clickhouse_config
+        table = cfg.get("table", "events")
 
+        column_names = [
+            "ts",
+            "run_id",
+            "event",
+            "branch_id",
+            "parent_branch_id",
+            "step_idx",
+            "payload",
+        ]
+
+        rows = []
+        for event_dict in batch:
             row = [
                 event_dict["ts"],
                 event_dict["run_id"],
@@ -188,18 +221,28 @@ class EventBus:
                 event_dict["step_idx"],
                 json.dumps(event_dict["payload"], ensure_ascii=False),
             ]
-            client.insert(
-                table,
-                [row],
-                column_names=[
-                    "ts",
-                    "run_id",
-                    "event",
-                    "branch_id",
-                    "parent_branch_id",
-                    "step_idx",
-                    "payload",
-                ],
-            )
-        except Exception:
-            self._clickhouse_failed = True
+            rows.append(row)
+
+        for attempt in range(2):
+            try:
+                if self._clickhouse_client is None:
+                    self._clickhouse_client = clickhouse_connect.get_client(
+                        host=cfg.get("host", "localhost"),
+                        port=cfg.get("port", 8123),
+                        username=cfg.get("username", "default"),
+                        password=cfg.get("password", ""),
+                        database=cfg.get("database", "default"),
+                    )
+                self._clickhouse_client.insert(
+                    table, rows, column_names=column_names
+                )
+                self._clickhouse_consecutive_failures = 0
+                return
+            except Exception:
+                self._clickhouse_client = None  # discard faulty client
+                if attempt == 0:
+                    continue  # retry once with a fresh client
+                self._clickhouse_consecutive_failures += 1
+                if self._clickhouse_consecutive_failures >= 3:
+                    self._clickhouse_failed = True
+                return
