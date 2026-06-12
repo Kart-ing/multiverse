@@ -65,6 +65,7 @@ import { TuiConfigProvider, useTuiConfig, type TuiConfig } from "./config"
 import { createTuiApiAdapters } from "./plugin/adapters"
 import { createTuiApi } from "./plugin/api"
 import { createPluginRuntime, PluginRuntimeProvider, usePluginRuntime, type TuiPluginHost } from "./plugin/runtime"
+import { startMultiverseSession } from "./util/multiverse-engine"
 import { CommandPaletteDialog } from "./component/command-palette"
 import {
   COMMAND_PALETTE_COMMAND,
@@ -812,15 +813,13 @@ function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPlugi
         suggested: true,
         run: () => {
           const isActive = !!(globalThis as any).__MULTIVERSE_ENABLED__
-          ;(globalThis as any).__MULTIVERSE_ENABLED__ = !isActive
-          if (!isActive) {
-            toast.show({
-              variant: "info",
-              message: "Multiverse activated! Start a chat to see the decision tree in the sidebar.",
-              duration: 5000,
-            })
-          } else {
+          if (isActive) {
+            (globalThis as any).__MULTIVERSE_ENABLED__ = false
             toast.show({ variant: "info", message: "Multiverse deactivated.", duration: 3000 })
+          } else {
+            (globalThis as any).__MULTIVERSE_ENABLED__ = true
+            startMultiverseSession("demo", "Build a landing page with hero, features, and footer")
+            toast.show({ variant: "info", message: "Multiverse activated! Tree appearing now...", duration: 4000 })
           }
           dialog.clear()
         },
