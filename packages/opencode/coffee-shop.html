@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brew & Bloom — Coffee Shop</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #FEFAE0;
+    --brown-dark: #3E2723;
+    --brown: #5D4037;
+    --brown-light: #8D6E63;
+    --gold: #D4A373;
+    --gold-light: #FAEDCD;
+    --white: #FFFFFF;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--cream);
+    color: var(--brown-dark);
+    line-height: 1.6;
+  }
+
+  /* Navigation */
+  nav {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    background: rgba(254, 250, 224, 0.95);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+    padding: 0 2rem;
+    border-bottom: 1px solid var(--gold-light);
+  }
+
+  .nav-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 72px;
+  }
+
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--brown-dark);
+  }
+
+  .logo span { color: var(--gold); }
+
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    text-decoration: none;
+    color: var(--brown);
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--gold); }
+
+  .menu-toggle {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 4px;
+  }
+
+  .menu-toggle span {
+    display: block;
+    width: 26px;
+    height: 2px;
+    background: var(--brown-dark);
+    transition: 0.3s;
+  }
+
+  /* Hero */
+  .hero {
+    margin-top: 72px;
+    height: 90vh;
+    min-height: 600px;
+    background: linear-gradient(rgba(62, 39, 35, 0.45), rgba(62, 39, 35, 0.55)), url('https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1400&q=80') center/cover no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--white);
+  }
+
+  .hero-content { max-width: 720px; padding: 0 2rem; }
+
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 4rem;
+    font-weight: 700;
+    line-height: 1.15;
+    margin-bottom: 1rem;
+  }
+
+  .hero p {
+    font-size: 1.2rem;
+    font-weight: 300;
+    margin-bottom: 2.5rem;
+    opacity: 0.9;
+  }
+
+  .btn {
+    display: inline-block;
+    padding: 14px 36px;
+    border-radius: 40px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s;
+  }
+
+  .btn-primary {
+    background: var(--gold);
+    color: var(--white);
+  }
+
+  .btn-primary:hover { background: #c4935f; transform: translateY(-2px); box-shadow: 0 4px 16px rgba(212, 163, 115, 0.4); }
+
+  .btn-outline {
+    border: 2px solid var(--white);
+    color: var(--white);
+    margin-left: 1rem;
+  }
+
+  .btn-outline:hover { background: var(--white); color: var(--brown-dark); }
+
+  /* Section Headers */
+  .section {
+    padding: 100px 2rem;
+  }
+
+  .section-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .section-tag {
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    font-size: 0.8rem;
+    color: var(--gold);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.8rem;
+    font-weight: 700;
+    color: var(--brown-dark);
+    margin-bottom: 1rem;
+  }
+
+  .section-subtitle {
+    color: var(--brown-light);
+    font-size: 1.05rem;
+    max-width: 500px;
+    margin-bottom: 3rem;
+  }
+
+  /* Menu */
+  .menu { background: var(--white); }
+
+  .menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+  }
+
+  .menu-card {
+    background: var(--cream);
+    border-radius: 16px;
+    padding: 2rem;
+    transition: transform 0.3s, box-shadow 0.3s;
+    border: 1px solid var(--gold-light);
+  }
+
+  .menu-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(62, 39, 35, 0.08);
+  }
+
+  .menu-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.3rem;
+  }
+
+  .menu-card h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    color: var(--brown-dark);
+  }
+
+  .menu-card .price {
+    font-weight: 600;
+    color: var(--gold);
+    font-size: 1.1rem;
+  }
+
+  .menu-card .desc {
+    color: var(--brown-light);
+    font-size: 0.9rem;
+  }
+
+  /* About */
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+  }
+
+  .about-img {
+    width: 100%;
+    border-radius: 16px;
+    object-fit: cover;
+    aspect-ratio: 4/5;
+  }
+
+  .about-text p {
+    color: var(--brown-light);
+    margin-bottom: 1rem;
+    font-size: 1.05rem;
+  }
+
+  .about-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--gold);
+  }
+
+  .stat-label {
+    font-size: 0.85rem;
+    color: var(--brown-light);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Contact */
+  .contact { background: var(--brown-dark); color: var(--cream); }
+
+  .contact .section-title { color: var(--white); }
+  .contact .section-subtitle { color: rgba(254, 250, 224, 0.7); }
+
+  .contact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+  }
+
+  .contact-info-item {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    align-items: flex-start;
+  }
+
+  .contact-icon {
+    width: 44px;
+    height: 44px;
+    background: rgba(212, 163, 115, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.2rem;
+  }
+
+  .contact-info-item h4 {
+    font-family: 'Playfair Display', serif;
+    margin-bottom: 0.2rem;
+    color: var(--white);
+  }
+
+  .contact-info-item p { color: rgba(254, 250, 224, 0.7); font-size: 0.9rem; }
+
+  .contact-form { display: flex; flex-direction: column; gap: 1rem; }
+
+  .contact-form input,
+  .contact-form textarea {
+    width: 100%;
+    padding: 14px 18px;
+    border-radius: 10px;
+    border: 1px solid rgba(254, 250, 224, 0.15);
+    background: rgba(254, 250, 224, 0.08);
+    color: var(--cream);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+
+  .contact-form input:focus,
+  .contact-form textarea:focus { border-color: var(--gold); }
+
+  .contact-form textarea { resize: vertical; min-height: 120px; }
+
+  .contact-form input::placeholder,
+  .contact-form textarea::placeholder { color: rgba(254, 250, 224, 0.35); }
+
+  .contact-form .btn { align-self: flex-start; }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 2rem;
+    border-top: 1px solid rgba(254, 250, 224, 0.1);
+    color: rgba(254, 250, 224, 0.4);
+    font-size: 0.85rem;
+    background: var(--brown-dark);
+  }
+
+  /* Mobile Nav */
+  @media (max-width: 768px) {
+    .nav-links {
+      position: fixed;
+      top: 72px;
+      left: 0;
+      right: 0;
+      background: rgba(254, 250, 224, 0.98);
+      flex-direction: column;
+      padding: 2rem;
+      gap: 1.5rem;
+      transform: translateX(100%);
+      transition: transform 0.3s;
+    }
+
+    .nav-links.open { transform: translateX(0); }
+
+    .menu-toggle { display: flex; }
+
+    .hero h1 { font-size: 2.6rem; }
+
+    .about-grid,
+    .contact-grid { grid-template-columns: 1fr; gap: 2rem; }
+
+    .hero .btn-outline { margin-left: 0; margin-top: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav>
+  <div class="nav-inner">
+    <div class="logo">Brew<span>&</span>Bloom</div>
+    <button class="menu-toggle" aria-label="Toggle menu" onclick="document.querySelector('.nav-links').classList.toggle('open')">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links">
+      <li><a href="#menu">Menu</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-content">
+    <h1>Where Every Sip Tells a Story</h1>
+    <p>Hand-roasted beans, slow-poured perfection, and a space that feels like home.</p>
+    <a href="#menu" class="btn btn-primary">Explore Our Menu</a>
+    <a href="#contact" class="btn btn-outline">Find Us</a>
+  </div>
+</section>
+
+<!-- Menu -->
+<section class="section menu" id="menu">
+  <div class="section-inner">
+    <div class="section-tag">Our Menu</div>
+    <h2 class="section-title">Crafted with Care</h2>
+    <p class="section-subtitle">Every drink is made to order using single-origin beans roasted in-house.</p>
+
+    <div class="menu-grid">
+      <div class="menu-card">
+        <div class="menu-card-header">
+          <h3>Espresso</h3>
+          <span class="price">$3.50</span>
+        </div>
+        <p class="desc">Double shot of our house blend — bold, rich, with notes of dark chocolate.</p>
+      </div>
+
+      <div class="menu-card">
+        <div class="menu-card-header">
+          <h3>Cappuccino</h3>
+          <span class="price">$4.50</span>
+        </div>
+        <p class="desc">Velvety microfoam over a perfect espresso base. The Italian classic.</p>
+      </div>
+
+      <div class="menu-card">
+        <div class="menu-card-header">
+          <h3>Pour Over</h3>
+          <span class="price">$5.00</span>
+        </div>
+        <p class="desc">Single-origin, brewed to order. Rotating selection — ask your barista.</p>
+      </div>
+
+      <div class="menu-card">
+        <div class="menu-card-header">
+          <h3>Matcha Latte</h3>
+          <span class="price">$5.50</span>
+        </div>
+        <p class="desc">Ceremonial-grade matcha whisked with steamed oat or whole milk.</p>
+      </div>
+
+      <div class="menu-card">
+        <div class="menu-card-header">
+          <h3>Cold Brew</h3>
+          <span class="price">$4.75</span>
+        </div>
+        <p class="desc">Steeped 18 hours for a smooth, naturally sweet finish. Served over ice.</p>
+      </div>
+
+      <div class="menu-card">
+        <div class="menu-card-header">
+          <h3>Croissant</h3>
+          <span class="price">$4.00</span>
+        </div>
+        <p class="desc">Buttery, flaky, baked fresh every morning. Pair it with any drink.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- About -->
+<section class="section" id="about">
+  <div class="section-inner">
+    <div class="about-grid">
+      <img
+        src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=600&q=80"
+        alt="Coffee shop interior"
+        class="about-img"
+        loading="lazy"
+      >
+      <div class="about-text">
+        <div class="section-tag">Our Story</div>
+        <h2 class="section-title">More Than Just Coffee</h2>
+        <p>
+          Founded in 2018, Brew & Bloom started as a tiny cart at the farmer's market.
+          We believed great coffee shouldn't be complicated — just exceptional beans,
+          careful technique, and genuine hospitality.
+        </p>
+        <p>
+          Today, our sunlit corner shop is a gathering place for the neighborhood.
+          We roast weekly in small batches, partner with farms that prioritize
+          sustainability, and pour every cup like it's the only one that matters.
+        </p>
+        <div class="about-stats">
+          <div class="stat">
+            <div class="stat-number">6</div>
+            <div class="stat-label">Years Roasting</div>
+          </div>
+          <div class="stat">
+            <div class="stat-number">12</div>
+            <div class="stat-label">Farm Partners</div>
+          </div>
+          <div class="stat">
+            <div class="stat-number">50k+</div>
+            <div class="stat-label">Cups Served</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Contact -->
+<section class="section contact" id="contact">
+  <div class="section-inner">
+    <div class="section-tag">Get In Touch</div>
+    <h2 class="section-title">Visit Us</h2>
+    <p class="section-subtitle">Drop by for a cup, or send us a message — we'd love to hear from you.</p>
+
+    <div class="contact-grid">
+      <div>
+        <div class="contact-info-item">
+          <div class="contact-icon">&#128205;</div>
+          <div>
+            <h4>Location</h4>
+            <p>427 Maple Street, Brooklyn, NY 11225</p>
+          </div>
+        </div>
+        <div class="contact-info-item">
+          <div class="contact-icon">&#128338;</div>
+          <div>
+            <h4>Hours</h4>
+            <p>Mon–Fri 7am–7pm<br>Sat–Sun 8am–6pm</p>
+          </div>
+        </div>
+        <div class="contact-info-item">
+          <div class="contact-icon">&#9993;</div>
+          <div>
+            <h4>Email</h4>
+            <p>hello@brewandbloom.com</p>
+          </div>
+        </div>
+      </div>
+
+      <form class="contact-form" onsubmit="event.preventDefault(); alert('Thanks for reaching out! We\'ll get back to you soon.'); this.reset();">
+        <input type="text" placeholder="Your name" required>
+        <input type="email" placeholder="Your email" required>
+        <textarea placeholder="Your message" required></textarea>
+        <button type="submit" class="btn btn-primary">Send Message</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer>&copy; 2024 Brew & Bloom. All rights reserved.</footer>
+
+</body>
+</html>

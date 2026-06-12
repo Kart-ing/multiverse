@@ -65,12 +65,7 @@ import { TuiConfigProvider, useTuiConfig, type TuiConfig } from "./config"
 import { createTuiApiAdapters } from "./plugin/adapters"
 import { createTuiApi } from "./plugin/api"
 import { createPluginRuntime, PluginRuntimeProvider, usePluginRuntime, type TuiPluginHost } from "./plugin/runtime"
-import {
-  startMultiverseSession,
-  advanceStep,
-  markBranchRunning,
-  getTreeState,
-} from "./util/multiverse-engine"
+import { MultiverseDialog } from "./component/multiverse-dialog"
 import { CommandPaletteDialog } from "./component/command-palette"
 import {
   COMMAND_PALETTE_COMMAND,
@@ -355,32 +350,6 @@ export const run = Effect.fn("Tui.run")(function* (input: TuiInput) {
     if (result.epilogue) process.stdout.write(result.epilogue + "\n")
   })
 })
-
-function runMultiverseDemo() {
-  const steps = [
-    "Plan architecture & layout",
-    "Create HTML structure",
-    "Style with CSS",
-    "Add hero section",
-    "Add features grid",
-    "Add footer & polish",
-  ]
-  let step = 0
-  const interval = setInterval(() => {
-    if (step >= steps.length) { clearInterval(interval); return }
-    const labels = ["Direct", "Modular", "Minimal", "Robust", "Creative"]
-    labels.forEach((_b, bi) => {
-      setTimeout(() => {
-        markBranchRunning("demo", step, bi)
-        setTimeout(() => {
-          const score = 60 + Math.floor(Math.random() * 40)
-          advanceStep("demo", step, bi, score, `Score: ${score}%`)
-        }, 400 + Math.random() * 600)
-      }, bi * 200)
-    })
-    step++
-  }, 3000)
-}
 
 function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPluginHost }) {
   const startup = useTuiStartup()
@@ -837,25 +806,13 @@ function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPlugi
       },
       {
         name: "multiverse.start",
-        title: "Toggle Multiverse decision tree mode",
+        title: "Show Multiverse decision tree demo",
         category: "Multiverse",
         slashName: "multiverse",
         slashAliases: ["mv", "tree", "parallel"],
         suggested: true,
         run: () => {
-          const isActive = !!(globalThis as any).__MULTIVERSE_ENABLED__
-          if (isActive) {
-            (globalThis as any).__MULTIVERSE_ENABLED__ = false
-            toast.show({ variant: "info", message: "Multiverse deactivated.", duration: 3000 })
-          } else {
-            (globalThis as any).__MULTIVERSE_ENABLED__ = true
-            // Start the tree session immediately
-            startMultiverseSession("demo", "Build a landing page with hero, features, and footer")
-            // Auto-animate the demo
-            runMultiverseDemo()
-            toast.show({ variant: "info", message: "Multiverse activated! Watch the sidebar.", duration: 4000 })
-          }
-          dialog.clear()
+          dialog.replace(() => <MultiverseDialog onClose={() => dialog.clear()} />)
         },
       },
       {
