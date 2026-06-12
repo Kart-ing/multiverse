@@ -107,7 +107,7 @@ See [`docs/PRD-A-engine.md`](docs/PRD-A-engine.md) for the full specification.
 ## Getting started
 
 ```bash
-git clone https://github.com/<owner>/multiverse.git
+git clone https://github.com/Kart-ing/multiverse.git
 cd multiverse
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"

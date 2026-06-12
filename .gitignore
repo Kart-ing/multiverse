@@ -48,3 +48,7 @@ Thumbs.db
 .env
 .env.local
 *.local
+
+# Local-only
+.claude/
+*.pdf
