@@ -15,6 +15,10 @@ function accepted(autoAccept: Record<string, boolean>, sessionID: string, direct
   return autoAccept[key] ?? autoAccept[sessionID] ?? (directoryKey ? autoAccept[directoryKey] : undefined)
 }
 
+export function isMultiverseMode(session?: { id: string; parentID?: string }) {
+  return false
+}
+
 export function isDirectoryAutoAccepting(autoAccept: Record<string, boolean>, directory: string) {
   const key = directoryAcceptKey(directory)
   return autoAccept[key] ?? false

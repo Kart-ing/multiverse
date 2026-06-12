@@ -112,6 +112,7 @@ type Info = ConfigV1.Info & {
   // plugin_origins is derived state, not a persisted config field. It keeps each winning plugin spec together
   // with the file and scope it came from so later runtime code can make location-sensitive decisions.
   plugin_origins?: ConfigPlugin.Origin[]
+  multiverse?: boolean
 }
 
 type State = {
@@ -683,4 +684,5 @@ export const defaultLayer = layer.pipe(
 
 export const node = LayerNode.make(layer, [FSUtil.node, Auth.node, Account.node, Env.node, Npm.node, httpClient])
 
+export * as ConfigMultiverse from "./multiverse"
 export * as Config from "./config"

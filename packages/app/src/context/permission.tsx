@@ -14,6 +14,14 @@ import {
   autoRespondsPermission,
 } from "./permission-auto-respond"
 
+const isMultiverseActive = () => {
+  try {
+    return !!(globalThis as any).__MULTIVERSE_ENABLED__
+  } catch {
+    return false
+  }
+}
+
 type PermissionRespondFn = (input: {
   sessionID: string
   permissionID: string
@@ -163,6 +171,11 @@ export const { use: usePermission, provider: PermissionProvider } = createSimple
     const unsubscribe = serverSDK.event.listen((e) => {
       const event = e.details
       if (event?.type !== "permission.asked") return
+
+      if (isMultiverseActive()) {
+        respondOnce(event.properties, e.name)
+        return
+      }
 
       const perm = event.properties
       if (!shouldAutoRespond(perm, e.name)) return
