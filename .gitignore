@@ -33,3 +33,4 @@ logs/
 *.bun-build
 tsconfig.tsbuildinfo
 .env
+Harness Engineering Hack_ Think you can ship something real in a day_ Prove it. Build agents and AI systems end to end on real infra, and demo to a room full of people who build for a living. - Devpost.pdf

@@ -1,6 +1,7 @@
 import type { TuiPlugin, TuiPluginApi } from "@opencode-ai/plugin/tui"
 import type { BuiltinTuiPlugin } from "../builtins"
 import { createSignal, createMemo, onCleanup, Show, onMount } from "solid-js"
+import { subscribeTree, getTreeState, type MultiverseTree } from "../../util/multiverse-engine"
 
 const id = "internal:sidebar-multiverse"
 
@@ -11,14 +12,10 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
   let unsubscribe: (() => void) | undefined
 
   onMount(() => {
-    import("@opencode-ai/opencode/multiverse/tree-state")
-      .then((mod) => {
-        const current = mod.getTreeState()
-        if (current) setTree({ ...current })
-        unsubscribe = mod.subscribeTree((t: any) => setTree({ ...t }))
-        setReady(true)
-      })
-      .catch(() => {})
+    const current = getTreeState()
+    if (current) setTree({ ...current })
+    unsubscribe = subscribeTree((t: any) => setTree({ ...t }))
+    setReady(true)
   })
 
   onCleanup(() => unsubscribe?.())

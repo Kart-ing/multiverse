@@ -1,6 +1,9 @@
 import type { TuiPlugin, TuiPluginApi } from "@opencode-ai/plugin/tui"
 import type { BuiltinTuiPlugin } from "./builtins"
 import { createSignal, onCleanup, Show, onMount } from "solid-js"
+import {
+  startMultiverseSession, advanceStep, markBranchRunning, markBranchFailed,
+} from "../util/multiverse-engine"
 
 const id = "internal:multiverse-commands"
 
@@ -15,15 +18,7 @@ const DEMO_STEPS = [
 ]
 
 function runDemo() {
-  const { startMultiverseSession, advanceStep, markBranchRunning, markBranchFailed, getTreeState } =
-    (globalThis as any).__MULTIVERSE_ENGINE__ ?? {}
-
-  if (!startMultiverseSession) return
-
-  startMultiverseSession("demo", DEMO_TASK, {
-    enabled: true, max_branches: 5, max_depth: 10,
-    auto_allow_permissions: true, verbose_logging: true,
-  })
+  startMultiverseSession("demo", DEMO_TASK)
 
   let step = 0
   const interval = setInterval(() => {
@@ -31,18 +26,16 @@ function runDemo() {
       clearInterval(interval)
       return
     }
-    const s = DEMO_STEPS[step]
     const branches = ["Direct", "Modular", "Minimal", "Robust", "Creative"]
 
-    // Run each branch
-    branches.forEach((b, bi) => {
+    branches.forEach((_b, bi) => {
       setTimeout(() => {
         markBranchRunning("demo", step, bi)
         setTimeout(() => {
           const success = Math.random() > 0.15
           const score = success ? 60 + Math.floor(Math.random() * 40) : 10 + Math.floor(Math.random() * 40)
           if (success) {
-            advanceStep("demo", step, bi, score, `${b} approach: ${score}%`)
+            advanceStep("demo", step, bi, score, `Score: ${score}%`)
           } else {
             markBranchFailed("demo", step, bi, "Failed verification")
           }
@@ -63,11 +56,6 @@ function MultiverseStatus(props: { api: TuiPluginApi }) {
   let cleanup: (() => void) | undefined
 
   onMount(() => {
-    // Expose engine for demo
-    import("@opencode-ai/opencode/multiverse/index")
-      .then((mod) => { (globalThis as any).__MULTIVERSE_ENGINE__ = mod })
-      .catch(() => {})
-
     interval = setInterval(() => {
       const wasActive = active()
       const isActive = !!(globalThis as any).__MULTIVERSE_ENABLED__
@@ -78,6 +66,7 @@ function MultiverseStatus(props: { api: TuiPluginApi }) {
       }
       if (!isActive && wasActive) {
         cleanup?.()
+        cleanup = undefined
       }
     }, 500)
   })

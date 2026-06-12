@@ -810,29 +810,14 @@ function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPlugi
         slashName: "multiverse",
         slashAliases: ["mv", "tree", "parallel"],
         suggested: true,
-        run: async () => {
+        run: () => {
           const isActive = !!(globalThis as any).__MULTIVERSE_ENABLED__
-          if (isActive) {
-            try {
-              const { deactivateMultiverse } = await import("@opencode-ai/opencode/multiverse/activate")
-              deactivateMultiverse()
-              toast.show({ variant: "info", message: "Multiverse mode deactivated.", duration: 3000 })
-            } catch {
-              toast.show({ variant: "warning", message: "Multiverse module not available.", duration: 3000 })
-            }
-          } else {
-            try {
-              const { activateMultiverse } = await import("@opencode-ai/opencode/multiverse/activate")
-              activateMultiverse("active", "")
-              toast.show({
-                variant: "info",
-                message: "Multiverse mode activated! Auto-allowing permissions. The decision tree will explore 5 parallel approaches per step.",
-                duration: 5000,
-              })
-            } catch {
-              toast.show({ variant: "warning", message: "Multiverse module not available in this build.", duration: 3000 })
-            }
-          }
+          ;(globalThis as any).__MULTIVERSE_ENABLED__ = !isActive
+          toast.show({
+            variant: "info",
+            message: isActive ? "Multiverse mode deactivated." : "Multiverse activated — exploring 5 parallel paths per step. Watch the sidebar!",
+            duration: 4000,
+          })
           dialog.clear()
         },
       },
@@ -841,14 +826,9 @@ function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPlugi
         title: "Stop Multiverse mode",
         category: "Multiverse",
         hidden: true,
-        run: async () => {
-          try {
-            const { deactivateMultiverse } = await import("@opencode-ai/opencode/multiverse/activate")
-            deactivateMultiverse()
-            toast.show({ variant: "info", message: "Multiverse mode deactivated.", duration: 3000 })
-          } catch {
-            // ignore
-          }
+        run: () => {
+          ;(globalThis as any).__MULTIVERSE_ENABLED__ = false
+          toast.show({ variant: "info", message: "Multiverse mode deactivated.", duration: 3000 })
           dialog.clear()
         },
       },
