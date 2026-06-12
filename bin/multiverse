@@ -2,22 +2,14 @@
 set -e
 
 # Multiverse - AI-powered development tool with parallel decision tree exploration
-# Run this to start the Multiverse TUI
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 MULTIVERSE_HOME="${MULTIVERSE_HOME:-$SCRIPT_DIR}"
 
-# Sponsor integrations - set these for full functionality
-# export PIONEER_API_KEY=""
-# export LANGFUSE_PUBLIC_KEY=""
-# export LANGFUSE_SECRET_KEY=""
-# export CLICKHOUSE_HOST=""
-# export COMPOSIO_API_KEY=""
-
-cd "$MULTIVERSE_HOME"
-
-# Auto-enable multiverse mode
-export OPENCODE_MULTIVERSE_ENABLED=1
+# Source .env if it exists
+if [ -f "$MULTIVERSE_HOME/.env" ]; then
+  export $(grep -v '^#' "$MULTIVERSE_HOME/.env" | xargs)
+fi
 
 echo "┌──────────────────────────────────────┐"
 echo "│         🔀  MULTIVERSE  🔀           │"
@@ -26,4 +18,4 @@ echo "│  Explore 5 paths. Pick the winner.   │"
 echo "└──────────────────────────────────────┘"
 echo ""
 
-exec bun run --cwd packages/opencode --conditions=browser src/index.ts "$@"
+exec bun run --cwd "$MULTIVERSE_HOME/packages/opencode" --conditions=browser src/index.ts "$@"
