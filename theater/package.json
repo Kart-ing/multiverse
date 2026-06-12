@@ -1,0 +1,11 @@
+{
+  "name": "multiverse-theater",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Projector-first PRD C theater UI and relay for Multiverse.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "check": "node --check server.mjs"
+  }
+}
