@@ -1,21 +1,91 @@
 import type { TuiPlugin, TuiPluginApi } from "@opencode-ai/plugin/tui"
 import type { BuiltinTuiPlugin } from "./builtins"
-import { createSignal, createMemo, onCleanup, Show, onMount } from "solid-js"
+import { createSignal, onCleanup, Show, onMount } from "solid-js"
 
 const id = "internal:multiverse-commands"
+
+const DEMO_TASK = "Build a landing page with hero, features section, and footer"
+const DEMO_STEPS = [
+  { desc: "Plan architecture & layout", metric: "Clear wireframe" },
+  { desc: "Create HTML structure", metric: "Valid HTML5" },
+  { desc: "Style with CSS", metric: "Responsive design" },
+  { desc: "Add hero section", metric: "CTA visible above fold" },
+  { desc: "Add features grid", metric: "3+ feature cards" },
+  { desc: "Add footer & polish", metric: "Complete page" },
+]
+
+function runDemo() {
+  const { startMultiverseSession, advanceStep, markBranchRunning, markBranchFailed, getTreeState } =
+    (globalThis as any).__MULTIVERSE_ENGINE__ ?? {}
+
+  if (!startMultiverseSession) return
+
+  startMultiverseSession("demo", DEMO_TASK, {
+    enabled: true, max_branches: 5, max_depth: 10,
+    auto_allow_permissions: true, verbose_logging: true,
+  })
+
+  let step = 0
+  const interval = setInterval(() => {
+    if (step >= DEMO_STEPS.length) {
+      clearInterval(interval)
+      return
+    }
+    const s = DEMO_STEPS[step]
+    const branches = ["Direct", "Modular", "Minimal", "Robust", "Creative"]
+
+    // Run each branch
+    branches.forEach((b, bi) => {
+      setTimeout(() => {
+        markBranchRunning("demo", step, bi)
+        setTimeout(() => {
+          const success = Math.random() > 0.15
+          const score = success ? 60 + Math.floor(Math.random() * 40) : 10 + Math.floor(Math.random() * 40)
+          if (success) {
+            advanceStep("demo", step, bi, score, `${b} approach: ${score}%`)
+          } else {
+            markBranchFailed("demo", step, bi, "Failed verification")
+          }
+        }, 600 + Math.random() * 800)
+      }, bi * 300)
+    })
+
+    step++
+  }, 3500)
+
+  return () => clearInterval(interval)
+}
 
 function MultiverseStatus(props: { api: TuiPluginApi }) {
   const theme = () => props.api.theme.current
   const [active, setActive] = createSignal(false)
   let interval: any
+  let cleanup: (() => void) | undefined
 
   onMount(() => {
+    // Expose engine for demo
+    import("@opencode-ai/opencode/multiverse/index")
+      .then((mod) => { (globalThis as any).__MULTIVERSE_ENGINE__ = mod })
+      .catch(() => {})
+
     interval = setInterval(() => {
-      setActive(!!(globalThis as any).__MULTIVERSE_ENABLED__)
-    }, 1000)
+      const wasActive = active()
+      const isActive = !!(globalThis as any).__MULTIVERSE_ENABLED__
+      setActive(isActive)
+      if (isActive && !wasActive) {
+        cleanup?.()
+        cleanup = runDemo()
+      }
+      if (!isActive && wasActive) {
+        cleanup?.()
+      }
+    }, 500)
   })
 
-  onCleanup(() => clearInterval(interval))
+  onCleanup(() => {
+    clearInterval(interval)
+    cleanup?.()
+  })
 
   return (
     <Show when={active()}>
@@ -24,7 +94,7 @@ function MultiverseStatus(props: { api: TuiPluginApi }) {
           🔀 Multiverse active — exploring 5 parallel paths per step
         </text>
         <text fg={theme().textMuted}>
-          Type /multiverse to toggle  |  /mv to toggle
+          Type /multiverse to toggle
         </text>
       </box>
     </Show>
