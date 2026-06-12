@@ -4,18 +4,7 @@ import type { BuiltinTuiPlugin } from "./builtins"
 const id = "internal:multiverse-commands"
 
 const tui: TuiPlugin = async (api) => {
-  api.slots.register({
-    order: 50,
-    slots: {
-      app(_ctx) {
-        return (
-          <box paddingTop={1} paddingBottom={1}>
-            <text fg="#ffaa00">🔀 MULTIVERSE READY — type /multiverse to start</text>
-          </box>
-        )
-      },
-    },
-  })
+  // Banner slot - shows at bottom of app (currently not rendering, sidebar works instead)
 }
 
 const plugin: BuiltinTuiPlugin = { id, tui }
