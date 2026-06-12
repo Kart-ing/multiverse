@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aroma — Artisan Coffee</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --obsidian: #0D0A08;
+    --espresso: #1A120F;
+    --roast: #3E1F14;
+    --copper: #B8734A;
+    --honey: #D9A066;
+    --cream: #F5EDE4;
+    --foam: #FBF7F4;
+    --moss: #5B6B4C;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--foam);
+    color: var(--obsidian);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* Nav */
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 6%;
+    background: rgba(251, 247, 244, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(62, 31, 20, 0.07);
+    transition: all 0.3s ease;
+  }
+
+  nav.scrolled { padding: 0.85rem 6%; background: rgba(251, 247, 244, 0.96); }
+
+  .logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.7rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--espresso);
+    text-decoration: none;
+  }
+
+  .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+  .nav-links a {
+    text-decoration: none;
+    color: var(--roast);
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    transition: color 0.3s;
+  }
+  .nav-links a:hover { color: var(--copper); }
+
+  .menu-toggle {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 4px;
+  }
+  .menu-toggle span {
+    width: 24px;
+    height: 2px;
+    background: var(--espresso);
+    transition: all 0.3s;
+  }
+
+  /* Hero */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 8rem 6% 6rem;
+    position: relative;
+    background: linear-gradient(135deg, #F5EDE4 0%, #E8D9CC 30%, #F0E3D6 60%, #FBF7F4 100%);
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 50%, rgba(184, 115, 74, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 50%, rgba(217, 160, 102, 0.06) 0%, transparent 60%);
+  }
+  .hero-content { position: relative; z-index: 1; max-width: 720px; }
+
+  .hero-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--copper);
+    margin-bottom: 2rem;
+    padding: 0.5rem 1.5rem;
+    border: 1px solid var(--copper);
+    border-radius: 100px;
+  }
+
+  .hero h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(3.2rem, 8vw, 5.5rem);
+    font-weight: 600;
+    line-height: 1.05;
+    color: var(--espresso);
+    margin-bottom: 1.5rem;
+  }
+  .hero h1 em {
+    font-style: italic;
+    color: var(--copper);
+  }
+
+  .hero p {
+    font-size: 1.15rem;
+    font-weight: 300;
+    color: var(--roast);
+    max-width: 460px;
+    margin: 0 auto 2.5rem;
+    opacity: 0.85;
+  }
+
+  .btn {
+    display: inline-block;
+    padding: 0.85rem 2.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: all 0.35s;
+    cursor: pointer;
+    border: none;
+  }
+  .btn-primary { background: var(--copper); color: var(--foam); }
+  .btn-primary:hover { background: var(--roast); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(62, 31, 20, 0.25); }
+  .btn-outline {
+    background: transparent;
+    color: var(--espresso);
+    border: 1.5px solid var(--espresso);
+    margin-left: 1rem;
+  }
+  .btn-outline:hover { background: var(--espresso); color: var(--foam); }
+
+  /* Scroll indicator */
+  .scroll-indicator {
+    position: absolute;
+    bottom: 2.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    opacity: 0.5;
+  }
+  .scroll-indicator span {
+    font-size: 0.65rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--roast);
+  }
+  .scroll-line {
+    width: 1px;
+    height: 40px;
+    background: var(--roast);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.3; transform: scaleY(1); }
+    50% { opacity: 1; transform: scaleY(1.5); }
+  }
+
+  /* Sections */
+  section { padding: 6rem 6%; }
+
+  .section-header {
+    text-align: center;
+    margin-bottom: 4rem;
+  }
+  .section-header .eyebrow {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: var(--copper);
+    margin-bottom: 0.75rem;
+  }
+  .section-header h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.2rem, 4vw, 3rem);
+    font-weight: 600;
+    color: var(--espresso);
+  }
+  .section-header p { color: var(--roast); opacity: 0.75; margin-top: 0.75rem; max-width: 480px; margin-left: auto; margin-right: auto; }
+
+  /* Menu */
+  #menu { background: var(--foam); }
+  .menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .menu-card {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(13, 10, 8, 0.04), 0 6px 20px rgba(13, 10, 8, 0.06);
+    transition: transform 0.35s, box-shadow 0.35s;
+  }
+  .menu-card:hover { transform: translateY(-6px); box-shadow: 0 12px 32px rgba(13, 10, 8, 0.12); }
+
+  .menu-card-img {
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3.5rem;
+  }
+  .menu-card-body { padding: 1.75rem; }
+  .menu-card-body h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--espresso);
+    margin-bottom: 0.35rem;
+  }
+  .menu-card-body .price {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--copper);
+    margin-bottom: 0.6rem;
+  }
+  .menu-card-body p {
+    font-size: 0.9rem;
+    color: var(--roast);
+    opacity: 0.7;
+    line-height: 1.55;
+  }
+  .menu-card-body .tags { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+  .tag {
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 0.25rem 0.75rem;
+    border-radius: 100px;
+    background: var(--cream);
+    color: var(--roast);
+  }
+
+  .img-espresso { background: linear-gradient(135deg, #3E1F14 0%, #1A120F 100%); }
+  .img-latte { background: linear-gradient(135deg, #D9A066 0%, #B8734A 100%); }
+  .img-coldbrew { background: linear-gradient(135deg, #5B6B4C 0%, #3E4F33 100%); }
+  .img-pourover { background: linear-gradient(135deg, #8B6F5C 0%, #6B5344 100%); }
+  .img-matcha { background: linear-gradient(135deg, #7D8B6F 0%, #5B6B4C 100%); }
+  .img-mocha { background: linear-gradient(135deg, #5C3A2E 0%, #3E1F14 100%); }
+
+  /* About */
+  #about { background: var(--cream); }
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    max-width: 1100px;
+    margin: 0 auto;
+    align-items: center;
+  }
+  .about-image {
+    aspect-ratio: 4/5;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--roast) 0%, var(--copper) 50%, var(--honey) 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .about-image::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 40%, rgba(13,10,8,0.3) 100%);
+  }
+  .about-text h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    font-weight: 600;
+    color: var(--espresso);
+    margin-bottom: 1.5rem;
+  }
+  .about-text p {
+    color: var(--roast);
+    opacity: 0.8;
+    margin-bottom: 1.25rem;
+    font-size: 1rem;
+    line-height: 1.75;
+  }
+  .about-stats {
+    display: flex;
+    gap: 3rem;
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(62, 31, 20, 0.1);
+  }
+  .stat-number {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--copper);
+  }
+  .stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; color: var(--roast); opacity: 0.6; }
+
+  /* Testimonials */
+  #testimonials { background: var(--foam); }
+  .testimonial-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .testimonial-card {
+    background: white;
+    padding: 2.5rem;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(13, 10, 8, 0.04);
+    position: relative;
+  }
+  .testimonial-card::before {
+    content: '"';
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 5rem;
+    color: var(--copper);
+    opacity: 0.2;
+    position: absolute;
+    top: 0.5rem;
+    left: 1.5rem;
+    line-height: 1;
+  }
+  .testimonial-card p {
+    font-size: 0.95rem;
+    color: var(--roast);
+    line-height: 1.7;
+    opacity: 0.85;
+    position: relative;
+    z-index: 1;
+  }
+  .testimonial-card .author {
+    margin-top: 1.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--espresso);
+  }
+  .testimonial-card .author span {
+    display: block;
+    font-weight: 400;
+    font-size: 0.75rem;
+    color: var(--copper);
+    opacity: 0.7;
+  }
+
+  /* Contact */
+  #contact { background: var(--espresso); color: var(--foam); }
+  #contact .section-header h2 { color: var(--foam); }
+  #contact .section-header p { color: var(--cream); opacity: 0.7; }
+  #contact .section-header .eyebrow { color: var(--honey); }
+
+  .contact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .contact-info { display: flex; flex-direction: column; gap: 2rem; }
+  .contact-item h4 {
+    font-size: 0.7rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--honey);
+    margin-bottom: 0.5rem;
+  }
+  .contact-item p { color: var(--cream); opacity: 0.75; font-size: 0.95rem; }
+
+  .contact-form { display: flex; flex-direction: column; gap: 1.25rem; }
+  .contact-form input,
+  .contact-form textarea {
+    width: 100%;
+    padding: 1rem 1.25rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    color: var(--foam);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+  .contact-form input:focus,
+  .contact-form textarea:focus { border-color: var(--honey); }
+  .contact-form textarea { min-height: 120px; resize: vertical; }
+  .contact-form input::placeholder,
+  .contact-form textarea::placeholder { color: rgba(255, 255, 255, 0.25); }
+
+  /* Footer */
+  footer {
+    background: var(--obsidian);
+    color: rgba(255, 255, 255, 0.5);
+    text-align: center;
+    padding: 2.5rem 6%;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+  }
+  footer a { color: var(--honey); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* Fade-in animation */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .nav-links { display: none; }
+    .menu-toggle { display: flex; }
+
+    .nav-links.open {
+      display: flex;
+      flex-direction: column;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: rgba(251, 247, 244, 0.98);
+      backdrop-filter: blur(16px);
+      padding: 1.5rem 6%;
+      gap: 1.25rem;
+      border-bottom: 1px solid rgba(62, 31, 20, 0.1);
+    }
+
+    .about-grid { grid-template-columns: 1fr; gap: 2rem; }
+    .about-image { aspect-ratio: 3/2; }
+    .contact-grid { grid-template-columns: 1fr; }
+
+    .hero-buttons { display: flex; flex-direction: column; gap: 1rem; align-items: center; }
+    .btn-outline { margin-left: 0; }
+
+    .about-stats { gap: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav id="navbar">
+  <a href="#" class="logo">AROMA</a>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#menu">Menu</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#testimonials">Reviews</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<section class="hero">
+  <div class="hero-content">
+    <span class="hero-badge">Est. 2016</span>
+    <h1>Crafted with <em>patience</em>, served with <em>passion</em>.</h1>
+    <p>Single-origin beans, roasted in small batches. Every cup tells a story from farm to first sip.</p>
+    <div class="hero-buttons">
+      <a href="#menu" class="btn btn-primary">Explore Menu</a>
+      <a href="#about" class="btn btn-outline">Our Story</a>
+    </div>
+  </div>
+  <div class="scroll-indicator">
+    <span>Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<section id="menu">
+  <div class="section-header fade-in">
+    <p class="eyebrow">The Menu</p>
+    <h2>Handcrafted Daily</h2>
+    <p>Every drink is made to order using our house-roasted beans.</p>
+  </div>
+
+  <div class="menu-grid">
+    <div class="menu-card fade-in">
+      <div class="menu-card-img img-espresso">☕</div>
+      <div class="menu-card-body">
+        <h3>Signature Espresso</h3>
+        <p class="price">$4.50</p>
+        <p>Double shot pulled from our single-origin Ethiopian Yirgacheffe. Rich crema, notes of dark chocolate and citrus.</p>
+        <div class="tags"><span class="tag">Signature</span><span class="tag">Hot</span></div>
+      </div>
+    </div>
+
+    <div class="menu-card fade-in">
+      <div class="menu-card-img img-latte">🥛</div>
+      <div class="menu-card-body">
+        <h3>Vanilla Bean Latte</h3>
+        <p class="price">$5.75</p>
+        <p>House-made vanilla syrup with steamed oat milk and two ristretto shots. Silky, balanced, and lightly sweet.</p>
+        <div class="tags"><span class="tag">Popular</span><span class="tag">Hot / Iced</span></div>
+      </div>
+    </div>
+
+    <div class="menu-card fade-in">
+      <div class="menu-card-img img-coldbrew">🧊</div>
+      <div class="menu-card-body">
+        <h3>Slow-Drip Cold Brew</h3>
+        <p class="price">$5.25</p>
+        <p>Steeped 18 hours for a smooth, low-acid profile. Served over a single large cube with a twist of orange.</p>
+        <div class="tags"><span class="tag">Iced</span><span class="tag">Limited</span></div>
+      </div>
+    </div>
+
+    <div class="menu-card fade-in">
+      <div class="menu-card-img img-pourover">🫗</div>
+      <div class="menu-card-body">
+        <h3>Pour-Over</h3>
+        <p class="price">$6.00</p>
+        <p>Rotating single-origin selection brewed to order through a Chemex. Clean, bright, and aromatic.</p>
+        <div class="tags"><span class="tag">Single Origin</span><span class="tag">Hot</span></div>
+      </div>
+    </div>
+
+    <div class="menu-card fade-in">
+      <div class="menu-card-img img-matcha">🍵</div>
+      <div class="menu-card-body">
+        <h3>Ceremonial Matcha</h3>
+        <p class="price">$6.25</p>
+        <p>Stone-ground Japanese matcha whisked with 80°C water. Earthy, vegetal, and deeply calming.</p>
+        <div class="tags"><span class="tag">Tea</span><span class="tag">Hot / Iced</span></div>
+      </div>
+    </div>
+
+    <div class="menu-card fade-in">
+      <div class="menu-card-img img-mocha">🍫</div>
+      <div class="menu-card-body">
+        <h3>Dark Mocha</h3>
+        <p class="price">$6.50</p>
+        <p>72% Belgian chocolate melted into espresso with steamed milk. Finished with a dusting of raw cacao.</p>
+        <div class="tags"><span class="tag">Indulgent</span><span class="tag">Hot</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="about">
+  <div class="about-grid">
+    <div class="about-image fade-in"></div>
+    <div class="about-text fade-in">
+      <h2>Rooted in craft,<br>grown by community.</h2>
+      <p>We started in a 300-square-foot garage with a refurbished Probat roaster and a belief that great coffee shouldn't be complicated. Ten years later, we still roast every batch by hand — by sight, smell, and sound — the way it was meant to be done.</p>
+      <p>Our beans come from farms we visit every harvest. We pay above Fair Trade, build multi-year relationships with growers, and keep our supply chain short. When you drink Aroma, you're tasting a direct connection to the soil, the farmer, and the roaster.</p>
+      <div class="about-stats">
+        <div>
+          <div class="stat-number">12+</div>
+          <div class="stat-label">Origin Partners</div>
+        </div>
+        <div>
+          <div class="stat-number">8,400</div>
+          <div class="stat-label">Cups / Week</div>
+        </div>
+        <div>
+          <div class="stat-number">3</div>
+          <div class="stat-label">Locations</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="testimonials">
+  <div class="section-header fade-in">
+    <p class="eyebrow">What People Say</p>
+    <h2>Regulars Who Became Family</h2>
+  </div>
+  <div class="testimonial-grid">
+    <div class="testimonial-card fade-in">
+      <p>The pour-over here ruined all other coffee for me. The baristas know my order and my dog's name. This isn't a coffee shop — it's a second living room.</p>
+      <div class="author">Maya Chen<span>Neighborhood regular since 2018</span></div>
+    </div>
+    <div class="testimonial-card fade-in">
+      <p>I drive 25 minutes each way for their cold brew. The orange twist is genius. I've tried to replicate it at home and failed every single time.</p>
+      <div class="author">James Okonkwo<span>Weekend regular</span></div>
+    </div>
+    <div class="testimonial-card fade-in">
+      <p>As a roaster myself, I'm picky. Aroma's Ethiopian Yirgacheffe is the real deal — impeccably roasted, properly rested, and served at the right temperature. Respect.</p>
+      <div class="author">Elena Rossi<span>Industry peer &amp; fan</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="contact">
+  <div class="section-header fade-in">
+    <p class="eyebrow">Get in Touch</p>
+    <h2>Let's Brew Something Together</h2>
+    <p>Wholesale inquiries, event bookings, or just want to say hello.</p>
+  </div>
+  <div class="contact-grid">
+    <div class="contact-info fade-in">
+      <div class="contact-item">
+        <h4>Visit Us</h4>
+        <p>214 Sycamore Street<br>Portland, OR 97214</p>
+      </div>
+      <div class="contact-item">
+        <h4>Hours</h4>
+        <p>Mon–Fri → 6am – 7pm<br>Sat–Sun → 7am – 5pm</p>
+      </div>
+      <div class="contact-item">
+        <h4>Wholesale</h4>
+        <p>wholesale@aromacoffee.com</p>
+      </div>
+    </div>
+    <form class="contact-form fade-in" onsubmit="event.preventDefault(); alert('Thanks for reaching out! We'll get back to you within 24 hours.');">
+      <input type="text" placeholder="Your name" required>
+      <input type="email" placeholder="Email address" required>
+      <textarea placeholder="Tell us what's on your mind..." required></textarea>
+      <button type="submit" class="btn btn-primary" style="background: var(--honey);">Send Message</button>
+    </form>
+  </div>
+</section>
+
+<footer>
+  &copy; 2026 Aroma Coffee Co. &nbsp;&mdash;&nbsp; Built with care in Portland.
+</footer>
+
+<script>
+  // Mobile menu toggle
+  document.getElementById('menuToggle').addEventListener('click', () => {
+    document.getElementById('navLinks').classList.toggle('open');
+  });
+
+  // Close mobile menu on link click
+  document.querySelectorAll('.nav-links a').forEach(link => {
+    link.addEventListener('click', () => {
+      document.getElementById('navLinks').classList.remove('open');
+    });
+  });
+
+  // Nav shadow on scroll
+  window.addEventListener('scroll', () => {
+    const nav = document.getElementById('navbar');
+    nav.classList.toggle('scrolled', window.scrollY > 50);
+  });
+
+  // Fade-in on scroll
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) entry.target.classList.add('visible');
+    });
+  }, { threshold: 0.15 });
+
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>

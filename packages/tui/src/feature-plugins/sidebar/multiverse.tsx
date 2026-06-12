@@ -1,20 +1,24 @@
 import type { TuiPlugin, TuiPluginApi } from "@opencode-ai/plugin/tui"
 import type { BuiltinTuiPlugin } from "../builtins"
 import { createSignal, onCleanup, onMount } from "solid-js"
-import { subscribeTree, getTreeState } from "../../util/multiverse-engine"
 
 const id = "internal:sidebar-multiverse"
 
 function View(props: { api: TuiPluginApi; session_id: string }) {
   const [tree, setTree] = createSignal<any>(null)
   let unsub: (() => void) | undefined
+  let demoInterval: any
 
   onMount(() => {
-    const t = getTreeState()
-    setTree(t)
-    unsub = subscribeTree((t: any) => setTree(t))
+    unsub = ((globalThis as any).__MULTIVERSE_ONUPDATE__ = (t: any) => setTree(t))
+
+    demoInterval = setInterval(() => {
+      const t = (globalThis as any).__MULTIVERSE_TREE__
+      if (t) setTree({ ...t })
+    }, 200)
+
+    onCleanup(() => { clearInterval(demoInterval); unsub?.() })
   })
-  onCleanup(() => unsub?.())
 
   const t = tree()
   if (!t || t.status === "idle") return null

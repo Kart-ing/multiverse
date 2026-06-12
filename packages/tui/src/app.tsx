@@ -65,7 +65,6 @@ import { TuiConfigProvider, useTuiConfig, type TuiConfig } from "./config"
 import { createTuiApiAdapters } from "./plugin/adapters"
 import { createTuiApi } from "./plugin/api"
 import { createPluginRuntime, PluginRuntimeProvider, usePluginRuntime, type TuiPluginHost } from "./plugin/runtime"
-import { MultiverseDialog } from "./component/multiverse-dialog"
 import { CommandPaletteDialog } from "./component/command-palette"
 import {
   COMMAND_PALETTE_COMMAND,
@@ -812,7 +811,72 @@ function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPlugi
         slashAliases: ["mv", "tree", "parallel"],
         suggested: true,
         run: () => {
-          dialog.replace(() => <MultiverseDialog onClose={() => dialog.clear()} />)
+          // Run demo directly — updates global that sidebar polls
+          const steps = [
+            "Plan architecture & layout",
+            "Create HTML structure",
+            "Style with CSS",
+            "Add hero section",
+            "Add features grid",
+            "Add footer & polish",
+          ]
+          const tree = {
+            root_task: "Build a landing page",
+            status: "running",
+            steps: steps.map((desc, i) => ({
+              index: i, description: desc,
+              status: i === 0 ? "running" : "pending",
+              branches: ["Direct", "Modular", "Minimal", "Robust", "Creative"].map((label, bi) => ({
+                branch_index: bi, approach: label, status: "pending", score: 0,
+              })),
+              winner_branch_index: undefined,
+            })),
+          }
+          ;(globalThis as any).__MULTIVERSE_TREE__ = tree
+
+          let step = 0
+          const labels = ["Direct", "Modular", "Minimal", "Robust", "Creative"]
+          const run = () => {
+            if (step >= steps.length) {
+              tree.status = "completed"
+              ;(globalThis as any).__MULTIVERSE_TREE__ = tree
+              return
+            }
+            tree.steps[step].status = "running"
+            ;(globalThis as any).__MULTIVERSE_TREE__ = { ...tree }
+
+            labels.forEach((_b, bi) => {
+              setTimeout(() => {
+                tree.steps[step].branches[bi].status = "running"
+                ;(globalThis as any).__MULTIVERSE_TREE__ = { ...tree }
+                setTimeout(() => {
+                  const score = 55 + Math.floor(Math.random() * 45)
+                  const passed = Math.random() > 0.1
+                  tree.steps[step].branches[bi].status = passed ? "success" : "failed"
+                  tree.steps[step].branches[bi].score = score
+                  ;(globalThis as any).__MULTIVERSE_TREE__ = { ...tree }
+
+                  // After last branch, pick winner
+                  if (bi === labels.length - 1) {
+                    const winner = tree.steps[step].branches
+                      .filter((b: any) => b.status === "success")
+                      .sort((a: any, b: any) => b.score - a.score)[0]
+                    if (winner) {
+                      winner.status = "success"
+                      tree.steps[step].winner_branch_index = winner.branch_index
+                    }
+                    tree.steps[step].status = "completed"
+                    ;(globalThis as any).__MULTIVERSE_TREE__ = { ...tree }
+                    step++
+                    setTimeout(run, 1000)
+                  }
+                }, 400 + Math.random() * 600)
+              }, bi * 250)
+            })
+          }
+          run()
+          toast.show({ variant: "info", message: "Multiverse demo running — watch the sidebar!", duration: 3000 })
+          dialog.clear()
         },
       },
       {
