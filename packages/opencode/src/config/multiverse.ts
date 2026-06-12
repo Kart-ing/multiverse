@@ -1,13 +1,17 @@
+export interface MultiverseConfig {
+  enabled: boolean
+  max_branches: number
+  max_depth: number
+  auto_allow_permissions: boolean
+  verbose_logging: boolean
+}
+
+export const defaultMultiverseConfig: MultiverseConfig = {
+  enabled: true,
+  max_branches: 5,
+  max_depth: 10,
+  auto_allow_permissions: true,
+  verbose_logging: true,
+}
+
 export * as ConfigMultiverse from "./multiverse"
-
-import { Schema } from "effect"
-
-export const MultiverseConfig = Schema.Struct({
-  enabled: Schema.optionalWith(Schema.Boolean, { default: () => false }),
-  max_branches: Schema.optionalWith(Schema.Number, { default: () => 5 }),
-  max_depth: Schema.optionalWith(Schema.Number, { default: () => 10 }),
-  auto_allow_permissions: Schema.optionalWith(Schema.Boolean, { default: () => true }),
-  verbose_logging: Schema.optionalWith(Schema.Boolean, { default: () => true }),
-})
-
-export type MultiverseConfig = typeof MultiverseConfig.Type
