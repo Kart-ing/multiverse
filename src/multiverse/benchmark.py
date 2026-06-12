@@ -14,6 +14,7 @@ from typing import Any
 
 from .engine import Engine
 from .events import EventBus
+from .live_ticker import TickerServer, build_live_ticker_task, register_ticker_tools
 from .orchestrator import Action, Orchestrator, ProgrammaticVerifier, Task, register_default_tools
 
 
@@ -155,18 +156,28 @@ def csv_task() -> Task:
 
 
 def make_orchestrator(base_dir: Path, run_id: str = "run_bench", clickhouse: dict | None = None, run_started_payload: dict | None = None) -> Orchestrator:
-    engine = Engine(root=base_dir, run_id=run_id, clickhouse=clickhouse, run_started_payload=run_started_payload)
+    engine = Engine(root=base_dir, run_id=run_id, clickhouse=clickhouse, run_started_payload=run_started_payload, http_get_allowlist=["127.0.0.1", "localhost"])
     register_default_tools(engine)
+    register_ticker_tools(engine)
     orchestrator = Orchestrator(engine)
     for task in build_tasks().values():
         orchestrator.register_task(task)
+    # live_ticker (7th task): needs a running world to read from.  Each
+    # orchestrator owns its TickerServer so the request-count bump is per-run.
+    ticker = TickerServer(initial=41, bump_after_requests=1).start()
+    orchestrator.ticker_server = ticker  # type: ignore[attr-defined]
+    orchestrator.register_task(build_live_ticker_task(ticker.url, ticker))
     return orchestrator
 
 
 def run_benchmark(iterations: int = 5, clickhouse: dict | None = None) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
+    # live_ticker is registered onto each orchestrator (it needs a running
+    # TickerServer) rather than via the pure build_tasks() factory, so add its
+    # id to the benchmark suite explicitly.
+    task_ids = [*build_tasks(), "live_ticker"]
     for speculation in (False, True):
-        for task_id in build_tasks():
+        for task_id in task_ids:
             for idx in range(iterations):
                 with tempfile.TemporaryDirectory(prefix="multiverse-bench-") as tmp:
                     orchestrator = make_orchestrator(Path(tmp), run_id=f"bench_{task_id}_{speculation}_{idx}", clickhouse=clickhouse)
@@ -174,6 +185,7 @@ def run_benchmark(iterations: int = 5, clickhouse: dict | None = None) -> dict[s
                     result = orchestrator.run(task_id, speculation=speculation)
                     elapsed = time.perf_counter() - started
                     rows.append({"task_id": task_id, "speculation": speculation, "success": bool(result["winner"]), "wall_clock": elapsed})
+                    getattr(orchestrator, "ticker_server", None) and orchestrator.ticker_server.stop()
                     orchestrator.engine.close()
     return {
         "runs": rows,
