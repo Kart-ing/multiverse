@@ -1,106 +1,76 @@
-import { Effect, Schema } from "effect"
+// Composio integration - Session-based tool execution for Multiverse branches
+// Uses @composio/core SDK pattern with OpenAIAgentsProvider
 
-export class ComposioConfig extends Schema.Class<ComposioConfig>("ComposioConfig")({
-  api_key: Schema.optional(Schema.String),
-  base_url: Schema.optionalWith(Schema.String, { default: () => "https://backend.composio.dev/api" }),
-  enabled: Schema.optionalWith(Schema.Boolean, { default: () => false }),
-}) {}
+export interface ComposioConfig {
+  api_key: string
+  base_url: string
+  enabled: boolean
+}
 
-let composioConfig: { api_key?: string; base_url: string; enabled: boolean } | null = null
+let composioConfig: ComposioConfig | null = null
 
-export function initComposio(config: { api_key?: string; base_url: string; enabled: boolean }) {
+export function initComposio(config: ComposioConfig) {
   composioConfig = config
   console.log(`[Composio] Initialized at ${config.base_url}`)
 }
 
-export interface ToolExecution {
-  tool: string
-  params: Record<string, unknown>
-  branch_id: string
-  step_index: number
+export function isComposioEnabled(): boolean {
+  return composioConfig?.enabled && !!composioConfig?.api_key
 }
 
-export interface ToolResult {
-  success: boolean
-  output: string
-  error?: string
-  composio_execution_id?: string
-  latency_ms: number
-}
-
-const TOOL_MAP: Record<string, string> = {
-  "bash": "BASH_EXEC",
-  "file_read": "FILE_READ",
-  "file_write": "FILE_WRITE",
-  "glob": "FILE_SEARCH",
-  "grep": "FILE_GREP",
-  "edit": "FILE_EDIT",
-  "write": "FILE_WRITE",
-}
-
-export function wrapToolCall(tool: string, params: Record<string, unknown>, branchId: string, stepIndex: number): ToolExecution {
-  return {
-    tool: TOOL_MAP[tool] ?? tool.toUpperCase(),
-    params,
-    branch_id: branchId,
-    step_index: stepIndex,
-  }
-}
-
-export async function executeViaComposio(exec: ToolExecution, config: ComposioConfig, directExecutor: (t: ToolExecution) => Promise<ToolResult>): Promise<ToolResult> {
-  if (!config.enabled || !config.api_key) {
-    return directExecutor(exec)
+// Wraps a tool execution through Composio's managed tool infrastructure
+// Pattern: session.create() -> session.tools() -> execute
+export async function composioSessionTools(userId: string): Promise<{
+  sessionId: string
+  tools: string[]
+  execute: (tool: string, params: Record<string, unknown>) => Promise<unknown>
+}> {
+  if (!composioConfig?.enabled || !composioConfig.api_key) {
+    return { sessionId: "local", tools: [], execute: async () => null }
   }
 
-  const start = Date.now()
   try {
-    const response = await fetch(`${config.base_url}/v1/actions/${exec.tool}/execute`, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${config.api_key}`,
-        "Content-Type": "application/json",
-        "X-Composio-Branch-Id": exec.branch_id,
-        "X-Composio-Step-Index": String(exec.step_index),
-      },
-      body: JSON.stringify({
-        params: exec.params,
-        metadata: {
-          source: "multiverse",
-          branch_id: exec.branch_id,
-          step_index: exec.step_index,
-        },
-      }),
+    // Dynamically import Composio SDK
+    const { Composio } = await import("@composio/core")
+    const { OpenAIAgentsProvider } = await import("@composio/openai-agents")
+
+    const composio = new Composio({
+      apiKey: composioConfig.api_key,
+      provider: new OpenAIAgentsProvider(),
     })
 
-    const data = await response.json() as any
-    const latency = Date.now() - start
+    const session = await composio.create(userId)
+    const tools = await session.tools()
 
-    if (!response.ok) {
-      console.log(`[Composio] Tool ${exec.tool} failed, falling back to direct execution`)
-      return directExecutor(exec)
-    }
+    console.log(`[Composio] Session ${session.sessionId} created with ${tools.length} tools`)
 
     return {
-      success: data.success ?? true,
-      output: data.output ?? data.result ?? JSON.stringify(data),
-      composio_execution_id: data.execution_id,
-      latency_ms: latency,
+      sessionId: session.sessionId,
+      tools: tools.map((t: any) => t.name ?? t),
+      execute: async (tool: string, params: Record<string, unknown>) => {
+        const result = await session.execute(tool, params)
+        return result
+      },
     }
   } catch (err) {
-    console.log(`[Composio] Composio unavailable, using direct execution:`, err)
-    return directExecutor(exec)
+    console.log(`[Composio] SDK unavailable, falling back to direct tool execution:`, err)
+    return { sessionId: "local", tools: [], execute: async () => null }
   }
 }
 
-export function logBranchExecution(
+// Log branch tool usage for Composio analytics
+export function logComposioBranch(
+  sessionId: string,
   branchId: string,
   stepIndex: number,
   approach: string,
   toolsUsed: string[],
   success: boolean,
-  score: number,
 ) {
-  console.log(`[Composio::Multiverse] branch=${branchId} step=${stepIndex} approach="${approach}" tools=[${toolsUsed.join(",")}] success=${success} score=${score}`)
+  console.log(
+    `[Composio::Multiverse] session=${sessionId} branch=${branchId} step=${stepIndex} ` +
+    `approach="${approach}" tools=[${toolsUsed.join(",")}] success=${success}`,
+  )
 }
 
 export * as Composio from "./composio"
