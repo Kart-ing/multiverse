@@ -1,7 +1,7 @@
 import type { TuiPlugin, TuiPluginApi } from "@opencode-ai/plugin/tui"
 import type { BuiltinTuiPlugin } from "../builtins"
-import { createSignal, createMemo, onCleanup, Show, onMount } from "solid-js"
-import { subscribeTree, getTreeState, type MultiverseTree } from "../../util/multiverse-engine"
+import { createSignal, onCleanup, Show, onMount } from "solid-js"
+import { subscribeTree, getTreeState } from "../../util/multiverse-engine"
 
 const id = "internal:sidebar-multiverse"
 
@@ -12,91 +12,44 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
   let unsubscribe: (() => void) | undefined
 
   onMount(() => {
-    const current = getTreeState()
-    if (current) setTree({ ...current })
-    unsubscribe = subscribeTree((t: any) => setTree({ ...t }))
+    const t = getTreeState()
+    if (t) setTree(t)
+    unsubscribe = subscribeTree((t: any) => setTree(t))
     setReady(true)
   })
 
   onCleanup(() => unsubscribe?.())
 
-  const show = createMemo(() => ready() && tree() && tree().status !== "idle")
-
-  const statusIcon = (status: string, isWinner?: boolean) => {
-    if (isWinner) return "★"
-    switch (status) {
-      case "completed": return "✓"
-      case "success": return "✓"
-      case "running": return "▸"
-      case "failed": return "✗"
-      case "pending": return "·"
-      default: return " "
-    }
-  }
-
-  const statusFg = (status: string) => {
-    switch (status) {
-      case "completed": return theme().success
-      case "success": return theme().success
-      case "running": return theme().warning
-      case "failed": return theme().danger
-      default: return theme().textMuted
-    }
-  }
-
-  const truncate = (s: string, max: number) => {
-    if (!s) return ""
-    return s.length > max ? s.slice(0, max - 1) + "…" : s.padEnd(max, " ")
-  }
+  const visible = () => ready() && tree() && tree().status === "running"
 
   return (
-    <Show when={show()}>
-      <box gap={0} paddingBottom={1}>
+    <Show when={visible()}>
+      <box>
         <text fg={theme().warning}>
-          ┌─ Multiverse ─{"─".repeat(15)}┐
+          ┌─ MULTIVERSE ────────────┐
         </text>
         <text fg={theme().text}>
-          │ {truncate(tree().root_task, 28)}│
+          │ Task: {(tree()?.root_task ?? "").slice(0, 23).padEnd(23, " ")}│
         </text>
         <text fg={theme().textMuted}>
-          │ {tree().steps.filter((s: any) => s.status === "completed").length}/{tree().steps.length} steps · {tree().status}{" ".repeat(Math.max(0, 12 - tree().status.length))}│
+          │ Steps: {(tree()?.steps?.filter((s: any) => s.status === "completed").length ?? 0)}/{(tree()?.steps?.length ?? 0)} completed        │
         </text>
-        <text fg={theme().textMuted}>│{" ".repeat(28)}│</text>
-        {(() => {
-          const rows: any[] = []
-          for (const step of tree().steps) {
-            const icon = statusIcon(step.status)
-            const cfg = statusFg(step.status)
-            rows.push(
-              <text fg={cfg}>
-                │ {icon} {truncate(step.description, 24)}{step.status === "completed" ? " ✓" : step.status === "running" ? " ▸" : ""} │
+        <text fg={theme().textMuted}>│                            │</text>
+        {(tree()?.steps ?? []).map((step: any) => (
+          <box>
+            <text fg={step.status === "completed" ? theme().success : step.status === "running" ? theme().warning : theme().textMuted}>
+              │ {step.status === "completed" ? "✓" : step.status === "running" ? "▸" : "·"} {(step.description ?? "").slice(0, 20).padEnd(20, " ")}       │
+            </text>
+            {(step.branches ?? []).slice(0, 3).map((b: any) => (
+              <text fg={b.status === "success" ? theme().success : b.status === "failed" ? theme().danger : b.status === "running" ? theme().warning : theme().textMuted}>
+                │   {b.status === "success" ? "✓" : b.status === "failed" ? "✗" : b.status === "running" ? "▸" : "·"} {(b.approach ?? "").slice(0, 8).padEnd(8, " ")} {b.score != null ? b.score + "%" : ""} {step.winner_branch_index === b.branch_index ? "★" : ""}
               </text>
-            )
-            if (step.branches && step.branches.length > 0 && (step.status === "running" || step.status === "completed")) {
-              const shown = step.branches.slice(0, 3)
-              for (const branch of shown) {
-                const isWinner = step.winner_branch_index === branch.branch_index
-                const bIcon = statusIcon(branch.status, isWinner)
-                const bFg = statusFg(branch.status)
-                const pct = branch.score != null ? ` ${branch.score}%` : ""
-                rows.push(
-                  <text fg={bFg}>
-                    │   {bIcon} {truncate(branch.approach, 10)}{pct}{isWinner ? " ★" : ""}{" ".repeat(Math.max(0, 8 - pct.length - (isWinner ? 2 : 0)))}│
-                  </text>
-                )
-              }
-              if (step.branches.length > 3) {
-                rows.push(
-                  <text fg={theme().textMuted}>
-                    │   ··· +{step.branches.length - 3} more{" ".repeat(10)}│
-                  </text>
-                )
-              }
-            }
-          }
-          return rows
-        })()}
-        <text fg={theme().warning}>└{"─".repeat(28)}┘</text>
+            ))}
+          </box>
+        ))}
+        <text fg={theme().warning}>
+          └────────────────────────────┘
+        </text>
       </box>
     </Show>
   )

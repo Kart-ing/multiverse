@@ -813,11 +813,15 @@ function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPlugi
         run: () => {
           const isActive = !!(globalThis as any).__MULTIVERSE_ENABLED__
           ;(globalThis as any).__MULTIVERSE_ENABLED__ = !isActive
-          toast.show({
-            variant: "info",
-            message: isActive ? "Multiverse mode deactivated." : "Multiverse activated — exploring 5 parallel paths per step. Watch the sidebar!",
-            duration: 4000,
-          })
+          if (!isActive) {
+            toast.show({
+              variant: "info",
+              message: "Multiverse activated! Start a chat to see the decision tree in the sidebar.",
+              duration: 5000,
+            })
+          } else {
+            toast.show({ variant: "info", message: "Multiverse deactivated.", duration: 3000 })
+          }
           dialog.clear()
         },
       },
