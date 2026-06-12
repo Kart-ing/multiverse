@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any, Callable, Protocol
 
 from .engine import Engine
-from .events import EventSink
+from .errors import IrreversibleInSpeculationError
 from .types import EffectClass, ToolResult
 
 
@@ -167,9 +167,7 @@ class Orchestrator:
 
     def run(self, task_id: str, *, speculation: bool = True, run_id: str | None = None) -> dict[str, Any]:
         task = self.tasks[task_id]
-        run_id = run_id or f"run_{uuid.uuid4().hex[:8]}"
-        self.engine.event_sink.run_id = run_id
-        self.engine.event_sink.emit("run_started", "b_root", payload={"task_id": task_id, "speculation": speculation})
+        run_id = run_id or self.engine._run_id
         failure_memory = ""
         try:
             result = self._attempt(task, speculation=speculation, failure_memory=failure_memory)
@@ -177,14 +175,14 @@ class Orchestrator:
                 failure_memory = _failure_memory(result["verifications"])
                 result = self._attempt(task, speculation=True, failure_memory=failure_memory)
                 result["retry"] = True
-            self.engine.event_sink.emit(
+            self.engine.emit_event(
                 "run_finished",
-                result["winner"] or "b_root",
+                "b_root",
                 payload={"task_id": task_id, "winner": result["winner"], "success": bool(result["winner"])},
             )
             return {"run_id": run_id, **result}
         except Exception as exc:
-            self.engine.event_sink.emit("run_finished", "b_root", payload={"task_id": task_id, "success": False, "error": str(exc)})
+            self.engine.emit_event("run_finished", "b_root", payload={"task_id": task_id, "success": False, "error": str(exc)})
             raise
 
     def fork_at(self, branch_id: str, step_idx: int, n: int = 2) -> list[str]:
@@ -216,10 +214,10 @@ class Orchestrator:
         verifications = {outcome.branch_id: self._verify(task, outcome.branch_id) for outcome in outcomes if not outcome.killed}
         winner = self._pick_winner(verifications)
         if winner:
-            self.engine.commit(winner)
             for outcome in outcomes:
                 if outcome.branch_id != winner:
                     self.engine.squash(outcome.branch_id, "verifier_rejected", verifications.get(outcome.branch_id, Verification(0, "fail", "not verified")).detail)
+            self.engine.commit(winner)
         else:
             for outcome in outcomes:
                 self.engine.squash(outcome.branch_id, "verifier_rejected", verifications.get(outcome.branch_id, Verification(0, "fail", "not verified")).detail)
@@ -232,10 +230,23 @@ class Orchestrator:
                 if idx >= self.max_steps_per_branch:
                     self.engine.squash(branch_id, "budget_killed", "max steps exceeded")
                     return BranchOutcome(branch_id, actions, results, killed=True)
-                results.append(self.engine.execute(branch_id, action.tool, action.args))
+                try:
+                    results.append(self.engine.execute(branch_id, action.tool, action.args))
+                except IrreversibleInSpeculationError:
+                    results.append(ToolResult(ok=False, error="IrreversibleInSpeculationError"))
+                self._checkpoint(branch_id, idx)
             return BranchOutcome(branch_id, actions, results)
         except Exception as exc:
             return BranchOutcome(branch_id, actions, results, error=str(exc))
+
+    def _checkpoint(self, branch_id: str, step_idx: int) -> None:
+        import sqlite3
+        db_path = self.engine.get_db_path(branch_id)
+        with sqlite3.connect(str(db_path)) as conn:
+            conn.execute("CREATE TABLE IF NOT EXISTS message_checkpoints (branch_id TEXT, step_idx INTEGER, history TEXT)")
+            conn.execute("INSERT OR REPLACE INTO message_checkpoints (branch_id, step_idx, history) VALUES (?, ?, ?)",
+                         (branch_id, step_idx, ""))
+            conn.commit()
 
     def _race_children(self, children: list[str], plans: list[list[Action]]) -> list[BranchOutcome]:
         outcomes: list[BranchOutcome] = []
@@ -260,11 +271,11 @@ class Orchestrator:
 
     def _verify(self, task: Task, branch_id: str) -> Verification:
         verification = task.verifier(self.engine, branch_id, task)
-        self.engine.event_sink.emit(
+        self.engine.emit_event(
             "verifier_score",
             branch_id,
-            step_idx=self.engine.get_step_idx(branch_id),
             payload={"branch_id": branch_id, "score": verification.score, "verdict": verification.verdict, "detail": verification.detail},
+            step_idx=self.engine.get_step_idx(branch_id),
         )
         return verification
 
@@ -277,21 +288,21 @@ class Orchestrator:
 
 
 def register_default_tools(engine: Engine) -> None:
-    def write_file(path: str, content: str, _workspace: Path, _db_path: Path) -> dict[str, str]:
-        target = _safe_workspace_file(_workspace, path)
+    def write_file(ctx, args):
+        target = _safe_workspace_file(ctx.workspace, args["path"])
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(content, encoding="utf-8")
-        return {"path": path, "bytes": str(len(content))}
+        target.write_text(args["content"], encoding="utf-8")
+        return {"path": args["path"], "bytes": str(len(args["content"]))}
 
-    def replace_text(path: str, old: str, new: str, _workspace: Path, _db_path: Path) -> dict[str, str]:
-        target = _safe_workspace_file(_workspace, path)
+    def replace_text(ctx, args):
+        target = _safe_workspace_file(ctx.workspace, args["path"])
         content = target.read_text(encoding="utf-8")
-        target.write_text(content.replace(old, new), encoding="utf-8")
-        return {"path": path}
+        target.write_text(content.replace(args["old"], args["new"]), encoding="utf-8")
+        return {"path": args["path"]}
 
-    def sqlite_exec(sql: str, _workspace: Path, _db_path: Path) -> str:
-        with sqlite3_connect(str(_db_path)) as conn:
-            conn.executescript(sql)
+    def sqlite_exec(ctx, args):
+        with sqlite3_connect(str(ctx.db_path)) as conn:
+            conn.executescript(args["sql"])
             conn.commit()
         return "ok"
 

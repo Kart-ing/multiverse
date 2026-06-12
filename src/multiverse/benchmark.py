@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import tempfile
 import time
@@ -12,7 +13,7 @@ from statistics import mean
 from typing import Any
 
 from .engine import Engine
-from .events import EventSink
+from .events import EventBus
 from .orchestrator import Action, Orchestrator, ProgrammaticVerifier, Task, register_default_tools
 
 
@@ -153,8 +154,8 @@ def csv_task() -> Task:
     )
 
 
-def make_orchestrator(base_dir: Path, run_id: str = "run_bench") -> Orchestrator:
-    engine = Engine(workspace=base_dir / "trunk", state_dir=base_dir / "state", events_path=base_dir / "events.jsonl", run_id=run_id)
+def make_orchestrator(base_dir: Path, run_id: str = "run_bench", clickhouse: dict | None = None, run_started_payload: dict | None = None) -> Orchestrator:
+    engine = Engine(root=base_dir, run_id=run_id, clickhouse=clickhouse, run_started_payload=run_started_payload)
     register_default_tools(engine)
     orchestrator = Orchestrator(engine)
     for task in build_tasks().values():
@@ -162,17 +163,18 @@ def make_orchestrator(base_dir: Path, run_id: str = "run_bench") -> Orchestrator
     return orchestrator
 
 
-def run_benchmark(iterations: int = 5) -> dict[str, Any]:
+def run_benchmark(iterations: int = 5, clickhouse: dict | None = None) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     for speculation in (False, True):
         for task_id in build_tasks():
             for idx in range(iterations):
                 with tempfile.TemporaryDirectory(prefix="multiverse-bench-") as tmp:
-                    orchestrator = make_orchestrator(Path(tmp), run_id=f"bench_{task_id}_{speculation}_{idx}")
+                    orchestrator = make_orchestrator(Path(tmp), run_id=f"bench_{task_id}_{speculation}_{idx}", clickhouse=clickhouse)
                     started = time.perf_counter()
                     result = orchestrator.run(task_id, speculation=speculation)
                     elapsed = time.perf_counter() - started
                     rows.append({"task_id": task_id, "speculation": speculation, "success": bool(result["winner"]), "wall_clock": elapsed})
+                    orchestrator.engine.close()
     return {
         "runs": rows,
         "summary": {
@@ -188,17 +190,19 @@ def write_synthetic_fixture(path: str | Path = "events.jsonl") -> Path:
     path = Path(path)
     if path.exists():
         path.unlink()
-    sink = EventSink(path, run_id="run_fixture")
-    sink.emit("run_started", "b_root", payload={"task_id": "fixture", "speculation": True})
-    sink.emit("step", "b_root", step_idx=1, payload={"tool": "read_file", "args_summary": "task.md", "result_summary": "ok", "effect_class": "READ", "latency_ms": 4})
-    sink.emit("fork", "b_root", step_idx=1, payload={"children": ["b_root.1", "b_root.2", "b_root.3"], "reason": "low confidence write", "entropy": 0.62})
+    bus = EventBus(path)
+    run_id = "run_fixture"
+    bus.emit("run_started", run_id=run_id, branch_id="b_root", parent_branch_id=None, step_idx=0, payload={"task_id": "fixture", "speculation": True})
+    bus.emit("step", run_id=run_id, branch_id="b_root", parent_branch_id=None, step_idx=1, payload={"tool": "read_file", "args_summary": "task.md", "result_summary": "ok", "effect_class": "READ", "latency_ms": 4})
+    bus.emit("fork", run_id=run_id, branch_id="b_root", parent_branch_id=None, step_idx=1, payload={"children": ["b_root.1", "b_root.2", "b_root.3"], "reason": "low confidence write", "entropy": 0.62})
     for branch, score, verdict in (("b_root.1", 0.1, "fail"), ("b_root.2", 1.0, "pass"), ("b_root.3", 0.4, "fail")):
-        sink.emit("step", branch, parent_branch_id="b_root", step_idx=2, payload={"tool": "write_file", "args_summary": "answer", "result_summary": "ok", "effect_class": "SPECULATABLE_WRITE", "latency_ms": 9})
-        sink.emit("verifier_score", branch, parent_branch_id="b_root", step_idx=2, payload={"branch_id": branch, "score": score, "verdict": verdict, "detail": "fixture score"})
-    sink.emit("branch_died", "b_root.1", parent_branch_id="b_root", step_idx=2, payload={"cause": "verifier_rejected", "detail": "wrong output"})
-    sink.emit("branch_died", "b_root.3", parent_branch_id="b_root", step_idx=2, payload={"cause": "verifier_rejected", "detail": "partial output"})
-    sink.emit("commit", "b_root.2", parent_branch_id="b_root", step_idx=2, payload={"winning_branch": "b_root.2", "staged_effects_flushed": 0})
-    sink.emit("run_finished", "b_root.2", parent_branch_id="b_root", step_idx=2, payload={"task_id": "fixture", "winner": "b_root.2", "success": True})
+        bus.emit("step", run_id=run_id, branch_id=branch, parent_branch_id="b_root", step_idx=2, payload={"tool": "write_file", "args_summary": "answer", "result_summary": "ok", "effect_class": "SPECULATABLE_WRITE", "latency_ms": 9})
+        bus.emit("verifier_score", run_id=run_id, branch_id=branch, parent_branch_id="b_root", step_idx=2, payload={"branch_id": branch, "score": score, "verdict": verdict, "detail": "fixture score"})
+    bus.emit("branch_died", run_id=run_id, branch_id="b_root.1", parent_branch_id="b_root", step_idx=2, payload={"cause": "verifier_rejected", "detail": "wrong output"})
+    bus.emit("branch_died", run_id=run_id, branch_id="b_root.3", parent_branch_id="b_root", step_idx=2, payload={"cause": "verifier_rejected", "detail": "partial output"})
+    bus.emit("commit", run_id=run_id, branch_id="b_root.2", parent_branch_id="b_root", step_idx=2, payload={"winning_branch": "b_root.2", "staged_effects_flushed": 0})
+    bus.emit("run_finished", run_id=run_id, branch_id="b_root.2", parent_branch_id="b_root", step_idx=2, payload={"task_id": "fixture", "winner": "b_root.2", "success": True})
+    bus.close()
     return path
 
 
@@ -207,11 +211,15 @@ def main() -> None:
     parser.add_argument("--fixture", action="store_true")
     parser.add_argument("--events-path", default="events.jsonl")
     parser.add_argument("--iterations", type=int, default=5)
+    parser.add_argument("--clickhouse", action="store_true", default=None)
     args = parser.parse_args()
+    clickhouse_cfg = None
+    if args.clickhouse or os.environ.get("MV_CLICKHOUSE"):
+        clickhouse_cfg = {"host": "localhost", "port": 8123, "username": "default", "password": "multiverse", "database": "default", "table": "events"}
     if args.fixture:
         print(write_synthetic_fixture(args.events_path))
         return
-    print(json.dumps(run_benchmark(args.iterations), indent=2, sort_keys=True))
+    print(json.dumps(run_benchmark(args.iterations, clickhouse=clickhouse_cfg), indent=2, sort_keys=True))
 
 
 if __name__ == "__main__":

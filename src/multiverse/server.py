@@ -67,7 +67,10 @@ def serve(host: str = "127.0.0.1", port: int = 8787, base_dir: str | Path = ".mu
     orchestrator = make_orchestrator(Path(base_dir), run_id="run_control")
     httpd = ThreadingHTTPServer((host, port), ControlServer(orchestrator).handler())
     print(f"control server listening on http://{host}:{port}")
-    httpd.serve_forever()
+    try:
+        httpd.serve_forever()
+    finally:
+        orchestrator.engine.close()
 
 
 if __name__ == "__main__":

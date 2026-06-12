@@ -123,6 +123,7 @@ class Engine:
         clickhouse: dict | None = None,
         http_get_allowlist: list[str] | None = None,
         seed_workspace: str | Path | None = None,
+        run_started_payload: dict | None = None,
     ) -> None:
         """Bootstrap the engine.  Creates root layout, BranchManager, Journal,
         EventBus.  If *seed_workspace* is given copies its contents into trunk
@@ -154,7 +155,7 @@ class Engine:
         self._mgr.snapshot_trunk_initial()
         self._events.emit("run_started", run_id=self._run_id,
                           branch_id=BranchManager.TRUNK_ID, parent_branch_id=None,
-                          step_idx=0, payload={})
+                          step_idx=0, payload=run_started_payload or {})
 
     # ------------------------------------------------------------------
     # Helpers
@@ -440,6 +441,24 @@ class Engine:
     def get_db_path(self, branch_id: str) -> Path:
         """Absolute path to *branch_id*'s SQLite database file."""
         return self._mgr.get_db_path(branch_id)
+
+    def get_step_idx(self, branch_id: str) -> int:
+        """Last issued step index for *branch_id*, or -1 if none."""
+        return self._mgr.current_step(branch_id)
+
+    def emit_event(self, event: str, branch_id: str,
+                   payload: dict | None = None,
+                   step_idx: int | None = None) -> None:
+        """Public emission for orchestrator-layer events.
+
+        Auto-fills run_id, parent_branch_id; step_idx defaults to
+        ``max(get_step_idx(branch_id), 0)``.
+        """
+        if step_idx is None:
+            step_idx = max(self.get_step_idx(branch_id), 0)
+        self._events.emit(event, run_id=self._run_id, branch_id=branch_id,
+                          parent_branch_id=self._mgr.parent_of(branch_id),
+                          step_idx=step_idx, payload=payload or {})
 
     # ------------------------------------------------------------------
     # Run life-cycle

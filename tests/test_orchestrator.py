@@ -16,11 +16,13 @@ def test_trap_task_single_path_fails_and_speculation_commits_winner(tmp_path: Pa
     single = make_orchestrator(tmp_path / "single", run_id="single")
     single_result = single.run("trap_file", speculation=False)
     assert single_result["winner"] is None
+    single.engine.close()
 
     speculative = make_orchestrator(tmp_path / "spec", run_id="spec")
     spec_result = speculative.run("trap_file", speculation=True)
     assert spec_result["winner"] == "b_root.2"
-    assert (speculative.engine.trunk_workspace / "answer.txt").read_text(encoding="utf-8") == "SECOND"
+    assert (speculative.engine.get_workspace("b_root") / "answer.txt").read_text(encoding="utf-8") == "SECOND"
+    speculative.engine.close()
 
     events = load_events(tmp_path / "spec" / "events.jsonl")
     assert sum(event["event"] == "commit" for event in events) == 1
@@ -35,10 +37,11 @@ def test_fork_at_spawns_children_after_finished_run(tmp_path: Path) -> None:
     result = orchestrator.run("trap_file", speculation=True)
     children = orchestrator.fork_at(result["winner"], 1, n=2)
     assert len(children) == 2
-    assert children[0].startswith(f"{result['winner']}.replay1.")
+    assert children[0].startswith(f"{result['winner']}.")
 
     events = load_events(tmp_path / "events.jsonl")
-    assert any(event["event"] == "fork" and event["branch_id"].endswith("replay1") for event in events)
+    assert any(event["event"] == "fork" and event["payload"].get("reason") == "fork_at" for event in events)
+    orchestrator.engine.close()
 
 
 def test_all_branches_fail_retries_once_with_failure_memory(tmp_path: Path) -> None:
@@ -61,7 +64,7 @@ def test_all_branches_fail_retries_once_with_failure_memory(tmp_path: Path) -> N
         ],
         verifier=ProgrammaticVerifier(check).verify,
     )
-    engine = Engine(workspace=tmp_path / "trunk", state_dir=tmp_path / "state", events_path=tmp_path / "events.jsonl", run_id="retry")
+    engine = Engine(root=tmp_path / "retry_eng", run_id="retry")
     register_default_tools(engine)
     orchestrator = Orchestrator(engine)
     orchestrator.register_task(task)
@@ -69,11 +72,12 @@ def test_all_branches_fail_retries_once_with_failure_memory(tmp_path: Path) -> N
     result = orchestrator.run("retry_demo", speculation=True)
     assert result["winner"] is not None
     assert result["retry"] is True
-    assert (engine.trunk_workspace / "answer.txt").read_text(encoding="utf-8") == "WIN"
+    assert (engine.get_workspace("b_root") / "answer.txt").read_text(encoding="utf-8") == "WIN"
 
-    events = load_events(tmp_path / "events.jsonl")
+    events = load_events(tmp_path / "retry_eng" / "events.jsonl")
     forks = [event for event in events if event["event"] == "fork"]
     assert len(forks) == 2
+    engine.close()
 
 
 def test_synthetic_fixture_matches_event_contract(tmp_path: Path) -> None:
