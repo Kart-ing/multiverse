@@ -1,38 +1,46 @@
-import type { TuiPlugin } from "@opencode-ai/plugin/tui"
+import type { TuiPlugin, TuiPluginApi } from "@opencode-ai/plugin/tui"
 import type { BuiltinTuiPlugin } from "./builtins"
+import { createSignal, createMemo, onCleanup, Show, onMount } from "solid-js"
 
 const id = "internal:multiverse-commands"
 
+function MultiverseStatus(props: { api: TuiPluginApi }) {
+  const theme = () => props.api.theme.current
+  const [active, setActive] = createSignal(false)
+  let interval: any
+
+  onMount(() => {
+    interval = setInterval(() => {
+      setActive(!!(globalThis as any).__MULTIVERSE_ENABLED__)
+    }, 1000)
+  })
+
+  onCleanup(() => clearInterval(interval))
+
+  return (
+    <Show when={active()}>
+      <box paddingTop={1} paddingBottom={1} paddingLeft={2} paddingRight={2} backgroundColor={theme().backgroundElement}>
+        <text fg={theme().warning}>
+          🔀 Multiverse active — exploring 5 parallel paths per step
+        </text>
+        <text fg={theme().textMuted}>
+          Type /multiverse to toggle  |  /mv to toggle
+        </text>
+      </box>
+    </Show>
+  )
+}
+
 const tui: TuiPlugin = async (api) => {
-  api.commands.register({
-    name: "multiverse.start",
-    title: "Start Multiverse decision tree",
-    category: "Multiverse",
-    slashName: "multiverse",
-    slashAliases: ["mv", "parallel", "tree"],
-    run: async () => {
-      try {
-        const { activateMultiverse } = await import("@opencode-ai/opencode/multiverse/activate")
-        await api.toast.show({
-          variant: "info",
-          message:
-            "Multiverse mode activated! All permissions will be auto-allowed. Use /mv-build to decompose a task.",
-          duration: 5000,
-        })
-        activateMultiverse("pending", "")
-      } catch (e) {
-        await api.toast.show({
-          variant: "error",
-          message: "Failed to activate Multiverse mode",
-        })
-      }
+  api.slots.register({
+    order: 50,
+    slots: {
+      app(_ctx) {
+        return <MultiverseStatus api={api} />
+      },
     },
   })
 }
 
-const plugin: BuiltinTuiPlugin = {
-  id,
-  tui,
-}
-
+const plugin: BuiltinTuiPlugin = { id, tui }
 export default plugin

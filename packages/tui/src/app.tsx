@@ -129,6 +129,8 @@ const appBindingCommands = [
   "app.toggle.diffwrap",
   "app.toggle.paste_summary",
   "app.toggle.session_directory_filter",
+  "multiverse.start",
+  "multiverse.stop",
 ] as const
 
 export type TuiInput = {
@@ -800,6 +802,55 @@ function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPlugi
           dialog.clear()
         },
         category: "System",
+      },
+      {
+        name: "multiverse.start",
+        title: "Toggle Multiverse decision tree mode",
+        category: "Multiverse",
+        slashName: "multiverse",
+        slashAliases: ["mv", "tree", "parallel"],
+        suggested: true,
+        run: async () => {
+          const isActive = !!(globalThis as any).__MULTIVERSE_ENABLED__
+          if (isActive) {
+            try {
+              const { deactivateMultiverse } = await import("@opencode-ai/opencode/multiverse/activate")
+              deactivateMultiverse()
+              toast.show({ variant: "info", message: "Multiverse mode deactivated.", duration: 3000 })
+            } catch {
+              toast.show({ variant: "warning", message: "Multiverse module not available.", duration: 3000 })
+            }
+          } else {
+            try {
+              const { activateMultiverse } = await import("@opencode-ai/opencode/multiverse/activate")
+              activateMultiverse("active", "")
+              toast.show({
+                variant: "info",
+                message: "Multiverse mode activated! Auto-allowing permissions. The decision tree will explore 5 parallel approaches per step.",
+                duration: 5000,
+              })
+            } catch {
+              toast.show({ variant: "warning", message: "Multiverse module not available in this build.", duration: 3000 })
+            }
+          }
+          dialog.clear()
+        },
+      },
+      {
+        name: "multiverse.stop",
+        title: "Stop Multiverse mode",
+        category: "Multiverse",
+        hidden: true,
+        run: async () => {
+          try {
+            const { deactivateMultiverse } = await import("@opencode-ai/opencode/multiverse/activate")
+            deactivateMultiverse()
+            toast.show({ variant: "info", message: "Multiverse mode deactivated.", duration: 3000 })
+          } catch {
+            // ignore
+          }
+          dialog.clear()
+        },
       },
       {
         name: "app.exit",
