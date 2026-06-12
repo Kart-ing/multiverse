@@ -1,6 +1,7 @@
 import { initPioneer } from "./pioneer"
 import { initLangfuse } from "./langfuse"
 import { initClickHouse, createMultiverseSchema } from "./clickhouse"
+import { initComposio } from "./composio"
 
 export function initSponsorIntegrations() {
   if (process.env.PIONEER_API_KEY) {
@@ -37,10 +38,20 @@ export function initSponsorIntegrations() {
     console.log("[Multiverse] ClickHouse persistence active")
   }
 
+  if (process.env.COMPOSIO_API_KEY) {
+    initComposio({
+      api_key: process.env.COMPOSIO_API_KEY,
+      base_url: process.env.COMPOSIO_BASE_URL ?? "https://backend.composio.dev/api",
+      enabled: true,
+    })
+    console.log("[Multiverse] Composio tool execution active")
+  }
+
   const active = [
     process.env.PIONEER_API_KEY && "Pioneer",
     process.env.LANGFUSE_PUBLIC_KEY && "Langfuse",
     process.env.CLICKHOUSE_HOST && "ClickHouse",
+    process.env.COMPOSIO_API_KEY && "Composio",
   ].filter(Boolean)
 
   if (active.length > 0) {

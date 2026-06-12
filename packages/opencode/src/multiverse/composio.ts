@@ -6,6 +6,13 @@ export class ComposioConfig extends Schema.Class<ComposioConfig>("ComposioConfig
   enabled: Schema.optionalWith(Schema.Boolean, { default: () => false }),
 }) {}
 
+let composioConfig: { api_key?: string; base_url: string; enabled: boolean } | null = null
+
+export function initComposio(config: { api_key?: string; base_url: string; enabled: boolean }) {
+  composioConfig = config
+  console.log(`[Composio] Initialized at ${config.base_url}`)
+}
+
 export interface ToolExecution {
   tool: string
   params: Record<string, unknown>
