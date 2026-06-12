@@ -27,7 +27,8 @@ export function initSponsorIntegrations() {
     initClickHouse({
       host: process.env.CLICKHOUSE_HOST,
       port: Number(process.env.CLICKHOUSE_PORT) || 8123,
-      database: process.env.CLICKHOUSE_DATABASE ?? "multiverse",
+      protocol: process.env.CLICKHOUSE_PROTOCOL ?? "https",
+      database: process.env.CLICKHOUSE_DATABASE ?? "default",
       username: process.env.CLICKHOUSE_USERNAME ?? "default",
       password: process.env.CLICKHOUSE_PASSWORD ?? "",
       enabled: true,

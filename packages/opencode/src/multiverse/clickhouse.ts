@@ -4,6 +4,7 @@ export interface ClickHouseConfig {
   database: string
   username: string
   password: string
+  protocol: string  // "http" | "https"
   enabled: boolean
 }
 
@@ -11,7 +12,7 @@ let clickhouseConfig: ClickHouseConfig | null = null
 
 export function initClickHouse(config: ClickHouseConfig) {
   clickhouseConfig = config
-  console.log(`[ClickHouse] Initialized at ${config.host}:${config.port}/${config.database}`)
+  console.log(`[ClickHouse] Initialized at ${config.protocol}://${config.host}:${config.port}/${config.database}`)
 }
 
 export function isClickHouseEnabled(): boolean {
@@ -22,10 +23,17 @@ export function getClickHouseConfig(): ClickHouseConfig | null {
   return clickhouseConfig
 }
 
+function chUrl(): string {
+  const c = clickhouseConfig!
+  return `${c.protocol}://${c.host}:${c.port}`
+}
+
+function btoa(str: string): string {
+  return Buffer.from(str).toString("base64")
+}
+
 export async function createMultiverseSchema() {
   if (!clickhouseConfig?.enabled) return
-  const host = clickhouseConfig.host
-  const port = clickhouseConfig.port
   const db = clickhouseConfig.database
 
   const schema = `CREATE TABLE IF NOT EXISTS ${db}.multiverse_trees (
@@ -40,21 +48,19 @@ export async function createMultiverseSchema() {
 
   try {
     const auth = btoa(`${clickhouseConfig.username}:${clickhouseConfig.password}`)
-    await fetch(`http://${host}:${port}/`, {
+    await fetch(chUrl(), {
       method: "POST",
       headers: { "Authorization": `Basic ${auth}` },
       body: schema,
     })
-    console.log(`[ClickHouse] Schema created`)
+    console.log(`[ClickHouse] Schema created in ${db}.multiverse_trees`)
   } catch (err) {
-    console.log(`[ClickHouse] Schema creation skipped (may already exist):`, err)
+    console.log(`[ClickHouse] Schema creation failed (may already exist):`, err)
   }
 }
 
 export async function persistTreeState(sessionId: string, tree: unknown) {
   if (!clickhouseConfig?.enabled) return
-  const host = clickhouseConfig.host
-  const port = clickhouseConfig.port
   const db = clickhouseConfig.database
 
   console.log(`[ClickHouse] Persisting tree state for session ${sessionId}`)
@@ -64,7 +70,7 @@ export async function persistTreeState(sessionId: string, tree: unknown) {
 
   try {
     const auth = btoa(`${clickhouseConfig.username}:${clickhouseConfig.password}`)
-    await fetch(`http://${host}:${port}/`, {
+    await fetch(chUrl(), {
       method: "POST",
       headers: {
         "Authorization": `Basic ${auth}`,
@@ -79,15 +85,13 @@ export async function persistTreeState(sessionId: string, tree: unknown) {
 
 export async function getHistoricalSessions(limit: number = 10): Promise<unknown[]> {
   if (!clickhouseConfig?.enabled) return []
-  const host = clickhouseConfig.host
-  const port = clickhouseConfig.port
   const db = clickhouseConfig.database
 
   const query = `SELECT session_id, timestamp, tree_state, source, sponsor FROM ${db}.multiverse_trees ORDER BY timestamp DESC LIMIT ${limit}`
 
   try {
     const auth = btoa(`${clickhouseConfig.username}:${clickhouseConfig.password}`)
-    const response = await fetch(`http://${host}:${port}/`, {
+    const response = await fetch(chUrl(), {
       method: "POST",
       headers: {
         "Authorization": `Basic ${auth}`,
@@ -104,10 +108,6 @@ export async function getHistoricalSessions(limit: number = 10): Promise<unknown
   } catch {
     return []
   }
-}
-
-function btoa(str: string): string {
-  return Buffer.from(str).toString("base64")
 }
 
 export * as ClickHouse from "./clickhouse"
