@@ -8,11 +8,16 @@ Public surface:
 """
 
 from .engine import Engine
+from .orchestrator import Action, Orchestrator, ScriptedRunner, Task
 from .types import EffectClass, ToolResult
 from .errors import IrreversibleInSpeculationError
 
 __all__ = [
     "Engine",
+    "Action",
+    "Orchestrator",
+    "ScriptedRunner",
+    "Task",
     "ToolResult",
     "EffectClass",
     "IrreversibleInSpeculationError",
