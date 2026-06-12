@@ -7,8 +7,8 @@ export function initSponsorIntegrations() {
   if (process.env.PIONEER_API_KEY) {
     initPioneer({
       api_key: process.env.PIONEER_API_KEY,
-      base_url: process.env.PIONEER_BASE_URL ?? "https://api.pioneer.com/v1",
-      model: process.env.PIONEER_MODEL ?? "pioneer-pro",
+      base_url: process.env.PIONEER_BASE_URL ?? "https://api.pioneer.ai/v1",
+      model: process.env.PIONEER_MODEL ?? "claude-fable-5",
       enabled: true,
     })
     console.log("[Multiverse] Pioneer integration active")
