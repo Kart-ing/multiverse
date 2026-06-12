@@ -111,14 +111,29 @@ git clone https://github.com/Kart-ing/multiverse.git
 cd multiverse
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-pytest
+pytest                                        # full acceptance + integration suite
+python examples/demo_engine.py                # narrated engine walkthrough
+python -m multiverse.benchmark --iterations 2 # speculation OFF vs ON, scripted runner
 ```
 
 > Requires Python 3.11+. Stdlib + minimal deps. SQLite for DB state, JSONL for the log.
 
+## What's in the box
+
+| Module | What it does |
+|--------|--------------|
+| `multiverse/engine.py` | The Engine: tool-call proxy, effect gating, CoW sandboxes, atomic commit, deterministic replay, `fork_at` time travel |
+| `multiverse/state.py` | Branch sandboxes — workspace + SQLite copy-on-fork, rename-swap commit, lineage registry |
+| `multiverse/journal.py` / `events.py` | Record/replay log + shared-contract event bus (JSONL, fire-and-forget ingest POST, batched ClickHouse inserts) |
+| `multiverse/orchestrator.py` | The Brain: agent loop, fork policy (confidence + critic), scheduler budgets, verifier, retry-with-failure-memory |
+| `multiverse/benchmark.py` | Headless task suite — speculation OFF vs ON success rates (`--clickhouse` to stream events) |
+| `multiverse/server.py` | Control API for the UI: `POST /run`, `POST /fork_at`, `GET /tasks` |
+
+ClickHouse setup + dashboard queries: [`docs/clickhouse.md`](docs/clickhouse.md)
+
 ## Status
 
-🚧 **Hackathon in progress.** See the [PRD](docs/PRD-A-engine.md) for milestones and acceptance tests.
+🏁 **Engine + orchestrator integrated and green** — benchmark shows speculation OFF 0% vs ON 100% on the scripted suite. See the PRDs in [`docs/`](docs/) for the full three-layer design.
 
 ## License
 
