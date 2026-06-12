@@ -71,8 +71,10 @@ function notify() {
 }
 
 export function clearTree() {
-  globalTree = null
+  // broadcast an idle tree so subscribers hide themselves, then drop it
+  globalTree = new MultiverseTree({ status: "idle" })
   notify()
+  globalTree = null
 }
 
 // Task decomposition
@@ -173,6 +175,19 @@ export function advanceStep(sessionId: string, stepIndex: number, branchIndex: n
       t.current_step_index = next
     } else {
       t.status = "completed"
+    }
+    return t
+  })
+}
+
+export function markBranchDone(sessionId: string, stepIndex: number, branchIndex: number, score: number) {
+  updateTree((t: MultiverseTree) => {
+    const step = t.steps[stepIndex]
+    if (!step) return t
+    const branch = step.branches[branchIndex]
+    if (branch) {
+      branch.status = "success"
+      branch.score = score
     }
     return t
   })

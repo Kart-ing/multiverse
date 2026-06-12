@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brew & Bloom — Coffee House</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --cream: #FDF6EC;
+    --espresso: #2C1810;
+    --caramel: #C4956A;
+    --mocha: #5C3A2E;
+    --latte: #E8D5C4;
+    --foam: #FAF7F2;
+    --accent: #D4A574;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--cream);
+    color: var(--espresso);
+    overflow-x: hidden;
+  }
+
+  nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 6%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: rgba(253, 246, 236, 0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(92, 58, 46, 0.08);
+  }
+
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--espresso);
+    letter-spacing: -0.5px;
+  }
+
+  .logo span { color: var(--caramel); }
+
+  .nav-links {
+    display: flex;
+    gap: 2.5rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    text-decoration: none;
+    color: var(--mocha);
+    font-size: 0.9rem;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--caramel); }
+
+  .btn {
+    display: inline-block;
+    padding: 0.8rem 2rem;
+    border-radius: 99px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.25s;
+    border: none;
+  }
+
+  .btn-primary {
+    background: var(--espresso);
+    color: var(--cream);
+  }
+
+  .btn-primary:hover {
+    background: var(--caramel);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(196, 149, 106, 0.35);
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--espresso);
+    border: 1.5px solid var(--espresso);
+  }
+
+  .btn-outline:hover {
+    background: var(--espresso);
+    color: var(--cream);
+  }
+
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding: 6rem 6% 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-content {
+    max-width: 620px;
+    z-index: 2;
+  }
+
+  .hero-tag {
+    display: inline-block;
+    padding: 0.35rem 1rem;
+    background: rgba(196, 149, 106, 0.12);
+    border: 1px solid rgba(196, 149, 106, 0.25);
+    border-radius: 99px;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--caramel);
+    margin-bottom: 1.5rem;
+  }
+
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 4.2rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--espresso);
+    margin-bottom: 1.25rem;
+    letter-spacing: -1px;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--caramel);
+  }
+
+  .hero p {
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: var(--mocha);
+    margin-bottom: 2.5rem;
+    max-width: 480px;
+  }
+
+  .hero-buttons { display: flex; gap: 1rem; flex-wrap: wrap; }
+
+  .hero-visual {
+    position: absolute;
+    right: -80px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 620px;
+    height: 620px;
+    z-index: 1;
+  }
+
+  .coffee-cup {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .cup-body {
+    width: 180px;
+    height: 200px;
+    background: linear-gradient(135deg, var(--latte) 0%, var(--accent) 100%);
+    border-radius: 12px 12px 60px 60px;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(44, 24, 16, 0.18);
+  }
+
+  .cup-body::before {
+    content: '';
+    position: absolute;
+    top: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 140px;
+    height: 50px;
+    background: linear-gradient(135deg, #3E1F0D 0%, var(--espresso) 100%);
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(44, 24, 16, 0.2);
+  }
+
+  .steam {
+    position: absolute;
+    top: -90px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .steam span {
+    display: block;
+    width: 4px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    margin: 0 auto 4px;
+    animation: rise 2.5s ease-in-out infinite;
+    opacity: 0;
+  }
+
+  .steam span:nth-child(1) { animation-delay: 0s; }
+  .steam span:nth-child(2) { animation-delay: 0.6s; width: 3px; }
+  .steam span:nth-child(3) { animation-delay: 1.2s; width: 5px; }
+
+  @keyframes rise {
+    0% { opacity: 0; transform: translateY(10px) scale(1); }
+    30% { opacity: 0.6; }
+    100% { opacity: 0; transform: translateY(-50px) scale(1.8); }
+  }
+
+  .beans {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .bean {
+    position: absolute;
+    width: 22px;
+    height: 30px;
+    background: radial-gradient(ellipse at 30% 30%, var(--accent), var(--espresso));
+    border-radius: 50%;
+    transform: rotate(var(--r));
+    opacity: 0.15;
+  }
+
+  .features {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    padding: 5rem 6%;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .feature-card {
+    text-align: center;
+    padding: 2.5rem 2rem;
+    background: var(--foam);
+    border-radius: 20px;
+    border: 1px solid rgba(92, 58, 46, 0.06);
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+
+  .feature-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(44, 24, 16, 0.08);
+  }
+
+  .feature-icon {
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, var(--caramel), var(--accent));
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.25rem;
+    font-size: 1.5rem;
+  }
+
+  .feature-card h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.25rem;
+    color: var(--espresso);
+    margin-bottom: 0.6rem;
+  }
+
+  .feature-card p {
+    font-size: 0.9rem;
+    color: var(--mocha);
+    line-height: 1.6;
+  }
+
+  @media (max-width: 900px) {
+    .hero { flex-direction: column; text-align: center; padding-top: 8rem; }
+    .hero-content { max-width: 100%; }
+    .hero p { max-width: 100%; margin-left: auto; margin-right: auto; }
+    .hero-buttons { justify-content: center; }
+    .hero-visual { display: none; }
+    .hero h1 { font-size: 2.8rem; }
+    .features { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero-content > * { animation: fadeIn 0.8s ease-out forwards; }
+  .hero-content > *:nth-child(2) { animation-delay: 0.1s; }
+  .hero-content > *:nth-child(3) { animation-delay: 0.2s; }
+  .hero-content > *:nth-child(4) { animation-delay: 0.3s; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Brew<span>&amp;</span>Bloom</div>
+  <ul class="nav-links">
+    <li><a href="#">Home</a></li>
+    <li><a href="#">Menu</a></li>
+    <li><a href="#">About</a></li>
+    <li><a href="#">Contact</a></li>
+  </ul>
+  <a href="#" class="btn btn-outline" style="padding: 0.55rem 1.5rem; font-size:0.8rem;">Order Now</a>
+</nav>
+
+<section class="hero">
+  <div class="hero-content">
+    <span class="hero-tag">Est. 2024 &bull; Portland</span>
+    <h1>Where every <em>sip</em> tells a story</h1>
+    <p>
+      Hand-roasted beans, slow-poured perfection, and a space that feels like home.
+      Step into Brew & Bloom for coffee that awakens your senses.
+    </p>
+    <div class="hero-buttons">
+      <a href="#" class="btn btn-primary">Explore Menu</a>
+      <a href="#" class="btn btn-outline">Find Us</a>
+    </div>
+    <div class="beans" aria-hidden="true">
+      <div class="bean" style="top:20%;left:10%;--r:15deg"></div>
+      <div class="bean" style="top:60%;left:5%;--r:-30deg"></div>
+      <div class="bean" style="top:40%;left:85%;--r:45deg"></div>
+      <div class="bean" style="top:75%;left:80%;--r:-15deg"></div>
+      <div class="bean" style="top:15%;left:60%;--r:70deg"></div>
+      <div class="bean" style="top:85%;left:40%;--r:-50deg"></div>
+    </div>
+  </div>
+
+  <div class="hero-visual" aria-hidden="true">
+    <div class="coffee-cup">
+      <div class="steam">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      <div class="cup-body"></div>
+    </div>
+  </div>
+</section>
+
+<section class="features">
+  <div class="feature-card">
+    <div class="feature-icon">&#9749;</div>
+    <h3>Single Origin</h3>
+    <p>Direct-trade beans from Ethiopia, Colombia, and Guatemala — roasted in-house daily.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">&#127968;</div>
+    <h3>Cozy Space</h3>
+    <p>Warm lighting, free Wi-Fi, and plenty of nooks for work, conversation, or quiet reflection.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">&#129382;</div>
+    <h3>Fresh Bakes</h3>
+    <p>Pastries, sourdough, and seasonal tarts from our kitchen — baked before sunrise.</p>
+  </div>
+</section>
+
+</body>
+</html>
