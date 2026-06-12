@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roast & Reverie</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --chocolate: #1E0F0A;
+    --roast: #3B2314;
+    --caramel: #D4945C;
+    --cream: #FAF3EA;
+    --milk: #F0E2D3;
+    --sage: #7D8B6F;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--chocolate);
+    overflow-x: hidden;
+  }
+
+  /* ---------- NAV ---------- */
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 5%;
+    background: rgba(250, 243, 234, 0.8);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(59, 35, 20, 0.06);
+  }
+
+  .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.5rem;
+    letter-spacing: -0.5px;
+    color: var(--chocolate);
+  }
+
+  .logo em { color: var(--caramel); font-style: italic; }
+
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    text-decoration: none;
+    color: var(--roast);
+    font-size: 0.85rem;
+    font-weight: 400;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--caramel); }
+
+  .nav-cta {
+    padding: 0.55rem 1.6rem;
+    background: var(--chocolate);
+    color: var(--cream);
+    border-radius: 99px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.2s;
+  }
+
+  .nav-cta:hover { background: var(--roast); transform: translateY(-1px); }
+
+  /* ---------- HERO ---------- */
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    padding: 6rem 5% 4rem;
+    gap: 3rem;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .hero-text {
+    max-width: 520px;
+    animation: slideUp 1s ease-out;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(28px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--caramel);
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-eyebrow::before {
+    content: '';
+    width: 32px;
+    height: 1px;
+    background: var(--caramel);
+  }
+
+  .hero h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2.8rem, 6vw, 4.6rem);
+    font-weight: 400;
+    line-height: 1.05;
+    margin-bottom: 1.5rem;
+    letter-spacing: -1.5px;
+  }
+
+  .hero h1 span {
+    display: block;
+    color: var(--caramel);
+    font-style: italic;
+  }
+
+  .hero p {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--roast);
+    margin-bottom: 2.5rem;
+    max-width: 440px;
+    opacity: 0.85;
+  }
+
+  .hero-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.85rem 2.2rem;
+    border-radius: 99px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.25s;
+    border: none;
+  }
+
+  .btn-fill {
+    background: var(--chocolate);
+    color: var(--cream);
+  }
+
+  .btn-fill:hover {
+    background: var(--roast);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(30, 15, 10, 0.25);
+  }
+
+  .btn-stroke {
+    background: transparent;
+    color: var(--chocolate);
+    border: 1.5px solid var(--chocolate);
+  }
+
+  .btn-stroke:hover {
+    background: var(--chocolate);
+    color: var(--cream);
+  }
+
+  /* ---------- HERO VISUAL ---------- */
+  .hero-visual {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeScale 1.2s ease-out;
+  }
+
+  @keyframes fadeScale {
+    from { opacity: 0; transform: scale(0.9); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  .coffee-illustration {
+    position: relative;
+    width: 340px;
+    height: 340px;
+  }
+
+  /* Plate / saucer */
+  .saucer {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 220px;
+    height: 30px;
+    background: radial-gradient(ellipse, #E8D5C4 30%, #C4A58A 100%);
+    border-radius: 50%;
+    box-shadow:
+      0 8px 30px rgba(30, 15, 10, 0.15),
+      inset 0 -4px 8px rgba(0,0,0,0.06);
+  }
+
+  .cup {
+    position: absolute;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 160px;
+    height: 180px;
+    background: linear-gradient(170deg, #F5EDE3 0%, #D4BFA5 40%, #B8956E 100%);
+    border-radius: 8px 8px 60px 60px;
+    box-shadow:
+      0 18px 50px rgba(30, 15, 10, 0.2),
+      inset 0 6px 20px rgba(255,255,255,0.25);
+  }
+
+  .cup-rim {
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 130px;
+    height: 50px;
+    background: linear-gradient(170deg, #3E2314 0%, #2A150D 100%);
+    border-radius: 50%;
+    box-shadow: 0 4px 14px rgba(30, 15, 10, 0.25);
+  }
+
+  .steam {
+    position: absolute;
+    top: -90px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 80px;
+  }
+
+  .steam-line {
+    position: absolute;
+    width: 4px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 50%;
+    animation: steam 3s ease-in-out infinite;
+    opacity: 0;
+  }
+
+  .steam-line:nth-child(1) { left: 8px;  animation-delay: 0s; }
+  .steam-line:nth-child(2) { left: 18px; animation-delay: 0.8s; width: 3px; }
+  .steam-line:nth-child(3) { left: 28px; animation-delay: 1.6s; width: 5px; }
+
+  @keyframes steam {
+    0%   { opacity: 0; transform: translateY(8px) scaleX(1); }
+    25%  { opacity: 0.5; }
+    70%  { opacity: 0; transform: translateY(-40px) scaleX(0.5); }
+    100% { opacity: 0; }
+  }
+
+  /* Floating beans */
+  .floating-bean {
+    position: absolute;
+    width: 18px;
+    height: 24px;
+    background: radial-gradient(ellipse at 35% 35%, #C4956A, #3B2314);
+    border-radius: 45%;
+    animation: float 6s ease-in-out infinite;
+    opacity: 0.2;
+  }
+
+  .floating-bean:nth-child(1) { top: 10%; left: 5%;  animation-delay: 0s; }
+  .floating-bean:nth-child(2) { top: 20%; right: 5%; animation-delay: 2s; width: 14px; height: 20px; }
+  .floating-bean:nth-child(3) { top: 60%; left: 0;   animation-delay: 4s; width: 22px; height: 28px; }
+  .floating-bean:nth-child(4) { bottom: 30%; right: 8%; animation-delay: 1s; }
+  .floating-bean:nth-child(5) { top: 45%; right: -5%; animation-delay: 3s; width: 16px; height: 22px; }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0) rotate(var(--r, 15deg)); }
+    50%      { transform: translateY(-14px) rotate(var(--r, 25deg)); }
+  }
+
+  /* Stats strip */
+  .stats {
+    display: flex;
+    gap: 3rem;
+    padding: 3rem 5% 5rem;
+    max-width: 1100px;
+    margin: 0 auto;
+    border-top: 1px solid rgba(59, 35, 20, 0.08);
+  }
+
+  .stat h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    color: var(--caramel);
+  }
+
+  .stat p {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--roast);
+  }
+
+  /* ---------- RESPONSIVE ---------- */
+  @media (max-width: 900px) {
+    .hero {
+      grid-template-columns: 1fr;
+      text-align: center;
+      padding-top: 8rem;
+    }
+
+    .hero-text { max-width: 100%; }
+    .hero p { margin-left: auto; margin-right: auto; }
+    .hero-buttons { justify-content: center; }
+    .hero-eyebrow { justify-content: center; }
+    .hero-visual { order: -1; }
+    .coffee-illustration { transform: scale(0.7); }
+
+    .nav-links { display: none; }
+
+    .stats { justify-content: center; flex-wrap: wrap; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Roast<em>&amp;</em>Reverie</div>
+  <ul class="nav-links">
+    <li><a href="#">Menu</a></li>
+    <li><a href="#">Story</a></li>
+    <li><a href="#">Locations</a></li>
+    <li><a href="#">Journal</a></li>
+  </ul>
+  <a href="#" class="nav-cta">Order Ahead</a>
+</nav>
+
+<main>
+  <section class="hero">
+    <div class="hero-text">
+      <p class="hero-eyebrow">Small-batch roasted daily</p>
+      <h1>Coffee that <span>feels like home</span></h1>
+      <p>
+        From single-origin pour-overs to velvety lattes — every cup at Roast & Reverie
+        is crafted with care, served with warmth, and made to linger over.
+      </p>
+      <div class="hero-buttons">
+        <a href="#" class="btn btn-fill">Explore the menu</a>
+        <a href="#" class="btn btn-stroke">Find a location</a>
+      </div>
+    </div>
+
+    <div class="hero-visual" aria-hidden="true">
+      <div class="coffee-illustration">
+        <div class="floating-bean" style="--r:15deg"></div>
+        <div class="floating-bean" style="--r:-20deg"></div>
+        <div class="floating-bean" style="--r:35deg"></div>
+        <div class="floating-bean" style="--r:-10deg"></div>
+        <div class="floating-bean" style="--r:25deg"></div>
+
+        <div class="steam">
+          <div class="steam-line"></div>
+          <div class="steam-line"></div>
+          <div class="steam-line"></div>
+        </div>
+
+        <div class="cup">
+          <div class="cup-rim"></div>
+        </div>
+        <div class="saucer"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="stats">
+    <div class="stat">
+      <h3>14</h3>
+      <p>Single origins</p>
+    </div>
+    <div class="stat">
+      <h3>3</h3>
+      <p>Portland locations</p>
+    </div>
+    <div class="stat">
+      <h3>98%</h3>
+      <p>5-star reviews</p>
+    </div>
+    <div class="stat">
+      <h3>6am</h3>
+      <p>Daily opening</p>
+    </div>
+  </div>
+</main>
+
+</body>
+</html>
