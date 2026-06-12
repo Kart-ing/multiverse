@@ -1,6 +1,6 @@
 import type { TuiPlugin, TuiPluginApi } from "@opencode-ai/plugin/tui"
 import type { BuiltinTuiPlugin } from "../builtins"
-import { createSignal, onCleanup, Show, onMount } from "solid-js"
+import { createSignal, onCleanup, onMount } from "solid-js"
 import { subscribeTree, getTreeState } from "../../util/multiverse-engine"
 
 const id = "internal:sidebar-multiverse"

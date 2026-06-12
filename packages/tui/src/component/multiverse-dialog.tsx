@@ -107,11 +107,11 @@ export function MultiverseDialog(props: { onClose: () => void }) {
         <text fg={done() ? "#44bb44" : "#666666"}>{done() ? " Done ✓" : " Running..."}</text>
       </box>
       <text fg="#f0a030">└──────────────────────────────────────────────┘</text>
-      <Show when={done()}>
+      {done() && (
         <box paddingTop={1} flexDirection="row" gap={2}>
           <text fg="#44bb44" onMouseDown={props.onClose}>[ Close ]</text>
         </box>
-      </Show>
+      )}
     </box>
   )
 }
