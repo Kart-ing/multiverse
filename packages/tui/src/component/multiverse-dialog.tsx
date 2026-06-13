@@ -15,7 +15,8 @@ const DEMO_STEPS = [
 
 const BRANCHES = ["Direct", "Modular", "Minimal", "Robust", "Creative"]
 
-export function MultiverseDialog(props: { onClose: () => void }) {
+export function MultiverseDialog(props: { onClose: () => void; task?: string }) {
+  const task = props.task ?? "Build a landing page with hero, features, and footer"
   const [step, setStep] = createSignal(0)
   const [branches, setBranches] = createSignal<{ index: number; label: string; status: string; score: number }[]>([])
   const [done, setDone] = createSignal(false)
@@ -24,7 +25,7 @@ export function MultiverseDialog(props: { onClose: () => void }) {
 
   onMount(() => {
     // Start the actual engine session (triggers Langfuse + ClickHouse logging)
-    startMultiverseSession("demo", "Build a landing page with hero, features, and footer")
+    startMultiverseSession("demo", task)
     setEngineStatus("Engine started — Langfuse tracing + ClickHouse persistence active")
 
     function runStep(s: number) {
@@ -91,7 +92,7 @@ export function MultiverseDialog(props: { onClose: () => void }) {
   return (
     <box flexDirection="column" paddingTop={1} paddingBottom={1} paddingLeft={2} paddingRight={2} gap={0}>
       <text fg="#f0a030">┌── Multiverse Decision Tree ─────────────────┐</text>
-      <text fg="#ffffff">│ Task: Build a landing page                    │</text>
+      <text fg="#ffffff">│ Task: {(task ?? "").slice(0, 44).padEnd(44, " ")} │</text>
       <text fg="#888888">│ Step {step() + 1}/{DEMO_STEPS.length} · {done() ? "Complete" : "Exploring..."}{" ".repeat(Math.max(0, 18 - (done() ? 8 : 12)))}│</text>
       <text fg={"#44bb44"}>│ {engineStatus().slice(0, 46).padEnd(46, " ")} │</text>
       <text fg="#666666">│                                              │</text>

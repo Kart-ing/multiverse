@@ -131,6 +131,7 @@ const appBindingCommands = [
   "app.toggle.paste_summary",
   "app.toggle.session_directory_filter",
   "multiverse.start",
+  "multiverse.build",
   "multiverse.stop",
 ] as const
 
@@ -813,6 +814,22 @@ function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPlugi
         suggested: true,
         run: () => {
           dialog.replace(() => <MultiverseDialog onClose={() => dialog.clear()} />)
+        },
+      },
+      {
+        name: "multiverse.build",
+        title: "Multiverse build: explore 5 paths for your task",
+        category: "Multiverse",
+        slashName: "mv-build",
+        run: () => {
+          // Get the user's current prompt text
+          let task = "Build this"
+          try {
+            const promptEl = promptRef.current
+            if (promptEl?.current?.input) task = promptEl.current.input
+          } catch {}
+          if (task.length < 5) task = "Build this"
+          dialog.replace(() => <MultiverseDialog task={task} onClose={() => dialog.clear()} />)
         },
       },
       {
