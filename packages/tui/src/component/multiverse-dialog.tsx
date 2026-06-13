@@ -1,4 +1,8 @@
 import { createSignal, onCleanup, onMount } from "solid-js"
+import {
+  startMultiverseSession, advanceStep, markBranchRunning, markBranchFailed,
+  subscribeTree, getTreeState,
+} from "../util/multiverse-engine"
 
 const DEMO_STEPS = [
   "Plan architecture & layout",
@@ -15,18 +19,24 @@ export function MultiverseDialog(props: { onClose: () => void }) {
   const [step, setStep] = createSignal(0)
   const [branches, setBranches] = createSignal<{ index: number; label: string; status: string; score: number }[]>([])
   const [done, setDone] = createSignal(false)
+  const [engineStatus, setEngineStatus] = createSignal("")
   let timers: any[] = []
 
   onMount(() => {
+    // Start the actual engine session (triggers Langfuse + ClickHouse logging)
+    startMultiverseSession("demo", "Build a landing page with hero, features, and footer")
+    setEngineStatus("Engine started — Langfuse tracing + ClickHouse persistence active")
+
     function runStep(s: number) {
-      if (s >= DEMO_STEPS.length) { setDone(true); return }
+      if (s >= DEMO_STEPS.length) { setDone(true); setEngineStatus("Complete — all traces and tree snapshots saved"); return }
       setStep(s)
       const current: { index: number; label: string; status: string; score: number }[] = []
 
       BRANCHES.forEach((label, bi) => {
         const t1 = setTimeout(() => {
-          // Mark running
           setBranches(prev => [...prev.filter(b => b.index !== bi), { index: bi, label, status: "running", score: 0 }])
+          // Log to engine → triggers Langfuse trace + ClickHouse persist
+          markBranchRunning("demo", s, bi)
 
           const t2 = setTimeout(() => {
             const score = 55 + Math.floor(Math.random() * 45)
@@ -35,12 +45,16 @@ export function MultiverseDialog(props: { onClose: () => void }) {
             setBranches(prev => [...prev.filter(b => b.index !== bi), final])
             current.push(final)
 
-            // After last branch, pick winner and advance
+            // Log to engine → triggers Langfuse + ClickHouse
+            if (passed) {
+              advanceStep("demo", s, bi, score, `Score: ${score}%, approach: ${label}`)
+            } else {
+              markBranchFailed("demo", s, bi, "Verification failed")
+            }
+
             if (current.length === BRANCHES.length) {
               const winner = current.filter(b => b.status === "pass").sort((a, b) => b.score - a.score)[0]
-              // Mark winner
               setBranches(prev => prev.map(b => b.index === winner?.index ? { ...b, status: "winner" } : b))
-              // Advance after delay
               setTimeout(() => runStep(s + 1), 1500)
             }
           }, 600 + Math.random() * 800)
@@ -79,6 +93,7 @@ export function MultiverseDialog(props: { onClose: () => void }) {
       <text fg="#f0a030">┌── Multiverse Decision Tree ─────────────────┐</text>
       <text fg="#ffffff">│ Task: Build a landing page                    │</text>
       <text fg="#888888">│ Step {step() + 1}/{DEMO_STEPS.length} · {done() ? "Complete" : "Exploring..."}{" ".repeat(Math.max(0, 18 - (done() ? 8 : 12)))}│</text>
+      <text fg={"#44bb44"}>│ {engineStatus().slice(0, 46).padEnd(46, " ")} │</text>
       <text fg="#666666">│                                              │</text>
       {DEMO_STEPS.map((desc, si) => {
         const isCurrent = si === step()

@@ -143,6 +143,10 @@ export function startMultiverseSession(sessionId: string, task: string) {
     t.status = "running"
     return t
   })
+
+  // Sponsor logging (fire and forget)
+  traceSession(sessionId, task, plan.length)
+  persistTree(sessionId)
 }
 
 export function advanceStep(sessionId: string, stepIndex: number, branchIndex: number, score: number, result: string) {
@@ -178,6 +182,10 @@ export function advanceStep(sessionId: string, stepIndex: number, branchIndex: n
     }
     return t
   })
+
+  // Sponsor logging
+  traceBranch(sessionId, stepIndex, branchIndex, "approach", score, result)
+  persistTree(sessionId)
 }
 
 export function markBranchDone(sessionId: string, stepIndex: number, branchIndex: number, score: number) {
@@ -214,4 +222,88 @@ export function markBranchFailed(sessionId: string, stepIndex: number, branchInd
     }
     return t
   })
+
+  // Sponsor logging
+  traceBranch(sessionId, stepIndex, branchIndex, "approach", 0, reason)
+  persistTree(sessionId)
+}
+
+// ── Sponsor integration helpers (fire and forget) ──
+
+function b64(s: string) { return Buffer.from(s).toString("base64") }
+
+function traceSession(sessionId: string, task: string, planLength: number) {
+  const pk = process.env.LANGFUSE_PUBLIC_KEY
+  const sk = process.env.LANGFUSE_SECRET_KEY
+  const url = process.env.LANGFUSE_BASE_URL ?? "https://us.cloud.langfuse.com"
+  if (!pk || !sk) return
+
+  const body = JSON.stringify({
+    batch: [{
+      id: `session-${sessionId}`,
+      type: "trace-create",
+      body: {
+        name: "Multiverse Session",
+        metadata: { sessionId, task, planLength, type: "session_start", sponsor: "langfuse" },
+        input: { task },
+        timestamp: new Date().toISOString(),
+      },
+    }],
+  })
+
+  fetch(`${url}/api/public/ingestion`, {
+    method: "POST",
+    headers: { Authorization: `Basic ${b64(`${pk}:${sk}`)}`, "Content-Type": "application/json" },
+    body,
+  }).catch(() => {})
+}
+
+function traceBranch(sessionId: string, stepIndex: number, branchIndex: number, approach: string, score: number, result: string) {
+  const pk = process.env.LANGFUSE_PUBLIC_KEY
+  const sk = process.env.LANGFUSE_SECRET_KEY
+  const url = process.env.LANGFUSE_BASE_URL ?? "https://us.cloud.langfuse.com"
+  if (!pk || !sk) return
+
+  const traceId = `branch-${sessionId}-s${stepIndex}-b${branchIndex}`
+  const body = JSON.stringify({
+    batch: [{
+      id: traceId,
+      type: "trace-create",
+      body: {
+        name: `Step ${stepIndex} Branch ${branchIndex}: ${approach}`,
+        metadata: { sessionId, stepIndex, branchIndex, approach, score, type: "branch_execution", sponsor: "langfuse" },
+        input: { approach, stepIndex },
+        output: { score, result: result.slice(0, 500) },
+        statusMessage: score >= 50 ? `Score: ${score}/100` : `Failed: ${result.slice(0, 200)}`,
+        timestamp: new Date().toISOString(),
+      },
+    }],
+  })
+
+  fetch(`${url}/api/public/ingestion`, {
+    method: "POST",
+    headers: { Authorization: `Basic ${b64(`${pk}:${sk}`)}`, "Content-Type": "application/json" },
+    body,
+  }).catch(() => {})
+}
+
+function persistTree(sessionId: string) {
+  const host = process.env.CLICKHOUSE_HOST
+  const port = process.env.CLICKHOUSE_PORT ?? "8443"
+  const proto = process.env.CLICKHOUSE_PROTOCOL ?? "https"
+  const db = process.env.CLICKHOUSE_DATABASE ?? "default"
+  const user = process.env.CLICKHOUSE_USERNAME ?? "default"
+  const pass = process.env.CLICKHOUSE_PASSWORD ?? ""
+  if (!host) return
+
+  const tree = getTreeState()
+  if (!tree) return
+  const json = JSON.stringify(tree).replace(/'/g, "\\'")
+  const query = `INSERT INTO ${db}.multiverse_trees (session_id, timestamp, tree_state, source, sponsor) VALUES ('${sessionId}', now(), '${json}', 'multiverse', 'clickhouse')`
+
+  fetch(`${proto}://${host}:${port}`, {
+    method: "POST",
+    headers: { Authorization: `Basic ${b64(`${user}:${pass}`)}`, "Content-Type": "text/plain" },
+    body: query,
+  }).catch(() => {})
 }
