@@ -1,6 +1,6 @@
 <p align="center">
   <h1 align="center">🔀 Multiverse</h1>
-  <p align="center"><strong>Decision Tree Agent Mode — explore 5 paths, pick the winner.</strong></p>
+  <p align="center"><strong>An OpenCode fork with a decision-tree agent mode, designed to try five approaches per step and keep the winner. A hackathon prototype.</strong></p>
 </p>
 
 <p align="center">
@@ -9,20 +9,25 @@
 
 ---
 
-> **Fork of [OpenCode](https://github.com/anomalyco/opencode)** — the open source AI coding agent.  
-> Multiverse adds a **decision tree agent mode** that explores multiple approaches in parallel.
+> **Fork of [OpenCode](https://github.com/anomalyco/opencode)**, the open source AI coding agent.  
+> Multiverse adds a **decision-tree agent mode** on top of it.
+
+**Team.** Lance Streuber, Ujjwal Aggarwal and Kartikey Pandey built Multiverse at the Harness Engineering Hack in June 2026. [Devpost](https://devpost.com/software/multiverse-xgqfrp)
+
+> [!WARNING]
+> Multiverse mode auto-allows every permission request, so the agent never stops to ask before it acts (`auto_allow_permissions` defaults to `true`). Only run `/multiverse` in a throwaway checkout.
 
 ## 🔀 What is Multiverse?
 
-Multiverse extends OpenCode with a **decision tree execution mode**. When activated, it:
+Multiverse is a hackathon prototype: an OpenCode fork with a decision-tree agent mode designed to try five approaches per step and keep the winner. The design:
 
-1. **Decomposes** your task into sequential steps with success metrics
-2. **Explores 5 parallel approaches** per step (Direct, Modular, Minimal, Robust, Creative)
-3. **Verifies** each approach against the success metric (scores 0–100)
-4. **Prunes** — only the winning branch advances to the next step
-5. **Auto-allows** all permissions so nothing blocks execution
+1. **Decompose** the task into sequential steps, each with a success metric.
+2. **Try 5 approaches** per step: Direct, Modular, Minimal, Robust and Creative.
+3. **Score** each approach from 0 to 100 against the step's metric.
+4. **Prune**, so only the winning branch advances to the next step.
+5. **Auto-allow** every permission, so nothing blocks execution. See the warning above.
 
-Type `/multiverse` to see the decision tree in action.
+Sandboxed APIs and deterministic replay are not built yet. In the TUI today, `/multiverse` and `/mv-build` animate the tree over six fixed demo steps with simulated scores; the engine isn't wired into them yet.
 
 ## 🚀 Quick Start
 
@@ -34,11 +39,11 @@ bun install
 multiverse            # launch the TUI
 ```
 
-Then type `/multiverse` to activate decision tree mode.
+Then type `/multiverse` to open the decision-tree demo, or `/mv-build` to open it with the task you've typed as its title.
 
 ## 🏆 Sponsor Integrations
 
-Built for the **Harness Engineering Hackathon** (June 2026). All integrations gracefully fall back if no keys are set.
+Built for the **Harness Engineering Hack** (June 2026). All integrations gracefully fall back if no keys are set.
 
 | Sponsor | What | Setup |
 |---------|------|-------|
